@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <record id="payment_term_matrix_tree_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Matrix Tree View</field>
+        <field name="model">payment.term.matrix</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="code"/>
+                <field name="description"/>
+                <field name="type"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    <record id="payment_term_matrix_form_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Matrix Form View</field>
+        <field name="model">payment.term.matrix</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="description"/>
+                        <field name="type"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="payment_term_matrix_action_id" model="ir.actions.act_window">
+        <field name="name">Payment Terms</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">payment.term.matrix</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem name="Payment Matrix Configuration" id="payment_term_matrix_parent_menu_id" sequence="40" parent="account.menu_finance"/>
+    <menuitem name="Payment Term Matrix" id="payment_term_matrix_child_item_1_id" parent="payment_term_matrix_parent_menu_id" action="payment_term_matrix_action_id"/>
+</odoo>

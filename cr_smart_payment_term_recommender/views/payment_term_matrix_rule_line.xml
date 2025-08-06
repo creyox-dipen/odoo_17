@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="payment_term_matrix_rule_line_tree_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Matrix Rule Line Tree View</field>
+        <field name="model">payment.term.matrix.rule.line</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="operator"/>
+                <field name="value_1"/>
+                <field name="value_2"/>
+                <field name="score"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    <record id="payment_term_matrix_rule_line_form_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Matrix Rule Line Form View</field>
+        <field name="model">payment.term.matrix.rule.line</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="operator"/>
+                        <field name="value_1"/>
+                        <field name="value_2" invisible="operator != 'between'"/>
+                        <field name="score"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="payment_term_matrix_rule_line_action_id" model="ir.actions.act_window">
+        <field name="name">Payment Matrix Rules</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">payment.term.matrix.rule.line</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+</odoo>

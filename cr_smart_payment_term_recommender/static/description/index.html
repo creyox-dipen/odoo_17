@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Odoo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" rel="stylesheet"
+          integrity="sha384-wvfXpqpZZVQGK6TAh5PVlGOfQNHSoD2xbE+QkPxCAFlNEevoEH3Sl0sibVcOQVnN" crossorigin="anonymous">
+    <link href="https://fonts.googleapis.com/css?family=Roboto:400,500,700&display=swap" rel="stylesheet">
+    <link href=https://apps.odoocdn.com/web/content/7247337-184ae0e/1/web.assets_frontend.css" rel="stylesheet">
+
+</head>
+
+<body>
+<main class="container" style="border-radius:20px;">
+    <header class="py-2">
+        <div class="row align-items-center" style="margin-top: 20px;">
+            <div class="col-12 col-md-12 text-right">
+                <span style="font-size: 19px; font-weight: 500;margin-right: 20px;color: black;"><i
+                        class="fa fa-check-circle mr-1" style="color: #00D100;"></i> Community</span>
+                <span style="font-size: 19px; font-weight: 500;color: black;"><i class="fa fa-check-circle mr-1"
+                                                                                 style="color: #00D100;"></i> Enterprise</span>
+                <span style="font-size: 19px; font-weight: 500;color: black;padding: 15px;"><i
+                        class="fa fa-check-circle mr-1" style="color: #00D100;"></i> Odoo.sh</span>
+            </div>
+        </div>
+        <hr/>
+    </header>
+
+    <!-- <center><span style="font-size: 28px;" class="text-success">We are offering a 20% discount on any odoo service.</span></center> -->
+    <div class="px-md-5 py-md-4 p-2 mb-4 bg-white shadow " style="border-radius:20px; font-family:'system-ui'">
+
+        <div class="position-relative mb-4" style="border-radius:10px">
+            <img alt="" class="w-100 h-100 position-absolute img-fluid left_0" loading="lazy"
+                 src="static_img/main_bg.jpg" style="border-radius: 25px;">
+            <div class="p-lg-5 p-3 position-relative">
+                <div class="row py-4 py-lg-0">
+                    <div class="col-md-12">
+                        <h1 style="font-family:'system-ui'; font-style:normal; font-weight:bold; font-size:calc(2.06rem + 1vw); line-height:120%; text-align:center; text-transform:capitalize">
+                            <span style="font-family:system-ui; color:#10488A; font-size:calc(2.06rem + 1vw)">GET PERSONALIZED DEMO</span>
+                        </h1>
+                    </div>
+                    <div class="col-md-12 py-2">
+                        <p style="font-family:system-ui; font-weight:500; font-size:18px; line-height:150% !important; text-align:center; letter-spacing:-0.02em; color:#4F4F4F">
+                            Please send your inquiry on email or skype to know more about this application.
+                        </p>
+                    </div>
+                    <div class="col-md-12 py-2 text-center ">
+                        <a href="mailto:support@creyox.com" target="_blank"
+                           style="background-color:#091E42; border-radius:12px; display:inline-block; padding:7px 33px; border:1px solid #091E42"
+                           class="mx-1 mb-2 deep-1 deep_hover">
+                            <img class="img" style="width:30px" src="static_img/email.png">
+                            <span class="pl-2" style="color:#fff; font-size:16px; vertical-align:middle">
+                                Email Us
+                            </span>
+                        </a>
+                        <a href="skype:live:.cid.d7506ede68fce23e?chat" target="_blank"
+                           style="background-color:#091E42; border-radius:12px; display:inline-block; padding:7px 33px; border:1px solid #091E42"
+                           class="mx-1 mb-2 deep-1 deep_hover">
+                            <img class="img" style="width:27px" src="static_img/skype.png">
+                            <span class="pl-2" style="color:#fff; font-size:16px; vertical-align:middle">
+                                Skype Us
+                            </span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="px-md-5 py-md-4 p-2 mb-4 bg-white shadow " style="border-radius:20px; font-family:'system-ui'">
+        <div class="position-relative mb-4" style="border-radius:10px">
+            <img alt="" class="w-100 h-100 position-absolute img-fluid left_0" loading="lazy"
+                 src="static_img/main_bg.jpg" style="border-radius: 25px;">
+            <div class="p-lg-5 p-3 position-relative">
+                <div class="row py-4 py-lg-0">
+                    <div class="col-md-12">
+                        <h1 style="font-family:'system-ui'; font-style:normal; font-weight:bold; font-size:calc(2.06rem + 1vw); line-height:120%; text-align:center; text-transform:capitalize">
+                            <span style="font-family:system-ui; color:#10488A; font-size:calc(2.06rem + 1vw)">Smart Payment Term Recommender</span>
+                        </h1>
+                    </div>
+                    <div class="col-md-12 py-2 text-center">
+                        <a class="btn btn-primary btn-lg mt8" target="_blank" style="color: #FFFFFF !important;"
+                           href="https://youtu.be/kBsNH9jwO0w">
+                            <i class="fa fa-check-square"></i> Watch Video </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-4 bg-white shadow" style="border-radius:20px; font-family:'system-ui'; font-weight:400">
+        <div class="tab-content p-md-5 p-2 py-3" id="myTabContent">
+            <div class="card shadow"
+                 style="background-color:#FFFAFA !important; border-color:#dfdfdf; border-radius:10px">
+                <br/>
+                <div class="row mb-5">
+                    <div class="col-12 col-md-12 text-center text-md-left">
+                        <center><h1 style="color: #000099;">Overview</h1></center>
+                    </div>
+                </div>
+                <div class="row align-items-center mb-4" style="margin-top:-25px">
+                    <div class="row align-items-center mb-4" style="margin-top:-25px">
+                        <div class="col-12 col-md-12">
+                            <div class="col-10 col-md-12" style="padding-left: 30px;">
+                                <p style="font-size: 20px;">
+                                    The Smart Payment Term Recommender module helps businesses automatically suggest the
+                                    most suitable payment terms for their customers during invoice creation. It analyzes
+                                    historical data such as invoice payment behavior, overdue occurrences, credit note
+                                    ratios, and other performance metrics to calculate a score for each customer. Based
+                                    on these scores, the system matches predefined rules and recommends a payment term
+                                    that aligns with the customer’s financial behavior.
+                                </p>
+                                <p style="font-size: 20px;">
+                                    This module allows users to configure flexible scoring rules for various key
+                                    performance indicators (KPIs). Each KPI can have its own thresholds and score
+                                    ranges, which are then linked to specific payment terms. The recommendation process
+                                    is fully automated, helping finance teams reduce manual judgment, minimize payment
+                                    delays, and make credit decisions more data-driven. It is ideal for companies that
+                                    deal with a large number of customers and want to standardize and optimize their
+                                    invoicing process.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <br/>
+            <section id="cr_hot_feature" style="padding-top:30px; background-color:transparent">
+                <div class="container">
+                    <div class="text-center mb-5">
+                        <h1 style="font-size:35px; color:#000099; margin-bottom:10px">
+                            Hot Features</h1>
+                    </div>
+                    <div class="row">
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Auto payment term suggestion
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Understands customer payment behavior
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Customizable scoring system
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Score-based decision making
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Real-time recommendation on invoices
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Helps reduce late payments
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-lg-4 col-md-6 col-sm-12 col-12 mb-2">
+                            <div class="d-flex justify-content-center align-items-center rounded shadow"
+                                 style="padding:15px; border:1px solid #9ebdfb; border-bottom:4px solid #9ebdfb; background-color:#f8fffc; border-radius:0.25rem !important">
+                                <span style="color:#212121; font-weight:600; vertical-align:middle; padding-left:10px; text-align:center">
+                                    Fully integrated with Accounting
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <br/>
+            <br/>
+            <div class="row mb-5">
+                <div class="col-12 col-md-12 text-center text-md-left">
+                    <center><h1 style="color: #000099;">Features</h1></center>
+                </div>
+            </div>
+            <div class="row align-items-center mb-4" style="margin-top:-25px">
+                <div class="col-12 col-md-12">
+                    <div class="container position-relative mt-4 shadow rounded"
+                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                        <div style="display:inline">
+                                <span class="fa fa-arrow-right"
+                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                Set up your own scoring rules
+                            </span>
+                        </div>
+                    </div>
+                    <div class="container position-relative mt-4 shadow rounded"
+                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                        <div style="display:inline">
+                                <span class="fa fa-arrow-right"
+                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                Choose conditions based on real scenarios such as late payments, credit notes, or early payments.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="container position-relative mt-4 shadow rounded"
+                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                        <div style="display:inline">
+                                <span class="fa fa-arrow-right"
+                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                Create multiple rules for flexibility
+                            </span>
+                        </div>
+                    </div>
+                    <div class="container position-relative mt-4 shadow rounded"
+                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                        <div style="display:inline">
+                                <span class="fa fa-arrow-right"
+                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                User-friendly for non-technical users
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br/>
+            <br/>
+
+            <ul class="nav nav-tabs justify-content-center bg-transparent" id="nav-tab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <a id="home-tab-backend" data-bs-toggle="pill" href="#pills-home" role="tab"
+                       aria-controls="pills-home"
+                       aria-selected="true" class="nav-link active">Backend
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" id="portal-faq" data-bs-toggle="pill" href="#pills-faq" role="tab"
+                       aria-controls="pill-faq" aria-selected="false"
+                    >FAQ
+                    </a>
+                </li>
+            </ul>
+            <br/>
+            <div class="tab-content" id="pills-tabContent">
+                <!-------------------- Backend Tab ----------------------------->
+                <div class="px-3 pt-1 tab-pane fade show active" id="pills-home" role="tabpanel" aria-labelledby="
+                            home-tab">
+                    <div class="row mb-5">
+                        <div class="col-12 col-md-12 text-center text-md-left">
+                            <center><h1 style="color: #000099;">Smart Payment Term Recommender</h1>
+                            </center>
+                        </div>
+                    </div>
+                    <div class="row align-items-center mb-4" style="margin-top:-25px">
+                        <div class="col-12 col-md-12">
+                            <ul style="font-size: 22px;">
+                                <li>Navigate to <b>Invoicing</b> → <b>Payment Matrix Configuration</b> → <b>Payment Term
+                                    Matrix</b></li>
+                                </li>
+                                <img src="images/1.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <img src="images/2.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <img src="images/3.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                            <ul style="font-size: 22px;">
+                                <li>User can now view all the predefined <b>Key Performance Indicators (KPIs)</b>.</li>
+                                <li>Here, the user can read all information related to each KPI, such as its <b>Name</b>,
+                                    <b>Type</b>, <b>Description</b>, and more.
+                                </li>
+                                <li>These matrices are read-only and cannot be modified.</li>
+                                <img src="images/4.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                            <ul style="font-size: 22px;">
+                                <li>Now navigate to <b>Payment Matrix Rule</b>.</li>
+                                <img src="images/5.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Click on the <b>New</b> button to define rules for Payment Matrix</li>
+                                <img src="images/6.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Here, the user can select a <b>Payment Matrix</b> from the list and assign <b>multiple
+                                    Rules</b> to it.
+                                </li>
+                                <img src="images/7.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Then, Click on <b>Add a line</b>, it will open popup to define rules</li>
+                                <li>Here, the user can set the <b>Operator</b>, <b>First Value</b> (lower bound), <b>Second
+                                    Value</b> (upper bound — only when the operator is "Between"), and a <b>Score</b>.
+                                </li>
+                                <img src="images/8.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>The user can define any number of custom rules here.</li>
+                                <img src="images/9.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Click on <b>Save Button</b> from the left corner</li>
+                                <img src="images/10.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                            <ul style="font-size: 22px;">
+                                <li>Similarly, you can define rules for each KPI you want to include in the customer's
+                                    score calculation.
+                                </li>
+                                <li>If you select a KPI that has already been defined, a validation error will appear to
+                                    prevent duplicate rule entries for the same KPI.
+                                </li>
+                                <img src="images/11.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <img src="images/12.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                            <ul style="font-size: 22px;">
+                                <li>Now navigate to <b>Payment Term Mapping</b>.</li>
+                                <img src="images/13.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Here, you can define final score ranges to map each score to a suitable payment
+                                    term.
+                                </li>
+                                <li>Click on <b>New</b> button.</li>
+                                <img src="images/14.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>It will open Payment Term Mapping window</li>
+                                <li>Here, user can set <b>Minimum Value</b>, <b>Maximum Value</b> and <b>Payment
+                                    Term</b>.
+                                </li>
+                                <img src="images/15.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>This helps determine which payment term is recommended based on the customer's
+                                    overall score.
+                                </li>
+                                <li>Then, click on <b>Save</b> button from the left corner</li>
+                                <img src="images/16.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>Define all the score ranges for selecting payment term</li>
+                                <img src="images/17.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                            <ul style="font-size: 22px;">
+                                <li>While creating a new <b>invoice</b>, when the user selects a <b>customer</b>,</li>
+                                <img src="images/18.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>The system automatically calculates the <b>customer's score</b> based on the defined
+                                    <b>payment matrix rules</b>.
+                                </li>
+                                <li>It then recommends a suitable <b>payment term</b> based on the score range
+                                    configured in the payment term mapping.
+                                </li>
+                                <img src="images/20.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>If the customer has no past invoice records, the system will display <b>"New Customer"</b>
+                                    and show the message <b>"This customer has no past invoice records"</b>.
+                                </li>
+                                <img src="images/19.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                                <li>If the <b>final score</b> doesn’t match any of the <b>defined score ranges</b>, the system will display: <b>"No payment term matched to this customer</b>."</li>
+                                <img src="images/21.png" alt="" class="img img-fluid shadow-lg mx-auto mt-4 mb-5"
+                                     loading="lazy"
+                                     style="border: 1px solid rgb(242, 238, 247); border-radius: 11px;"/>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="row mb-5">
+                        <div class="col-12 col-md-12 text-center text-md-left">
+                            <center><h1 style="color: #000099;"></h1></center>
+                        </div>
+                    </div>
+
+                    <div class="pr-5" style="font-size: 1.6rem; font-weight: 600; color: #0b3b52;">
+                        <br/>
+                        <center><a style="text-align: center; color: #000099;" target="_blank"
+                                   href="https://apps.odoo.com/apps/modules/browse?author=Creyox Technologies"><i
+                                class="fa fa-list"></i> OUR MORE APPS</a></center>
+                        <br/>
+                        <center>
+                            <div style="border: 1px solid black;width:50%;"></div>
+                        </center>
+                    </div>
+
+                    <div class="row mb-5">
+                        <div class="col-12 col-md-12 text-center text-md-left" style="margin-top: 40px;">
+                            <center><h1 style="color: #000099;"><i class="fa fa-handshake-o"
+                                                                   style="color: #B87333;"></i> Our
+                                Services <i class="fa fa-handshake-o" style="color: #B87333;"></i></h1></center>
+                        </div>
+                    </div>
+                    <div class="container" style="width: 100%; height:100%;">
+                        <div class="row">
+                            <div class="col-md-3 text-center">
+                                <div class="box p-4 shadow rounded mb-2"
+                                     style="background-color: #99b3ff;border: 2px solid #000099;border-radius: 0.25rem !important;">
+                                    <a href="mailto:support@creyox.com" target="_blank"
+                                       style="text-decoration: none;">
+                                        <div class="icon_img mb-2">
+                                            <h3><i class="fa fa-cloud-upload" style="color: #000099;"></i></h3>
+                                        </div>
+                                        <div class="content">
+                                            <p class="mb-0"
+                                               style="font-size: 18px;color: #000099;font-weight: bold;">
+                                                Odoo <br/>Implementation
+                                            </p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="box p-4 shadow rounded mb-2"
+                                     style="background-color: #99ff99;border: 2px solid #006600;border-radius: 0.25rem !important;">
+                                    <a href="mailto:support@creyox.com" target="_blank"
+                                       style="text-decoration: none;">
+                                        <div class="icon_img mb-2">
+                                            <h3><i class="fa fa-gear" style="color: #006600;"></i></h3>
+                                        </div>
+                                        <div class="content">
+                                            <p class="mb-0"
+                                               style="font-size: 18px;color: #006600;font-weight: bold;">
+                                                Odoo <br/>
+                                                Customization</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+                                <div class="box p-4 shadow rounded mb-2"
+                                     style="background-color: #ff9980;border: 2px solid #b32400;border-radius: 0.25rem !important;">
+                                    <a href="mailto:support@creyox.com" target="_blank"
+                                       style="text-decoration: none;">
+                                        <div class="icon_img mb-2">
+                                            <h3><i class="fa fa-exchange" style="color: #b32400;"></i></h3>
+                                        </div>
+                                        <div class="content">
+                                            <p class="mb-0"
+                                               style="font-size: 18px;color: #b32400;font-weight: bold;">
+                                                Odoo <br/>
+                                                Migration</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                            <div class="col-md-3 text-center">
+
+                                <div class="box p-4 shadow rounded mb-2"
+                                     style="background-color: #ffe699;border: 2px solid #997300;border-radius: 0.25rem !important;">
+                                    <a href="mailto:support@creyox.com" target="_blank"
+                                       style="text-decoration: none;">
+                                        <div class="icon_img mb-2">
+                                            <h3><i class="fa fa-users" style="color: #997300;"></i></h3>
+                                        </div>
+                                        <div class="content">
+                                            <p class="mb-0"
+                                               style="font-size: 18px;color: #997300;font-weight: bold;">
+                                                Support &<br>
+                                                Maintenance</p>
+                                        </div>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-------------------- FAQ tab ----------------------------->
+                <div class="px-3 pt-3 tab-pane fade" id="pills-faq" role="tabpanel" aria-labelledby="portal-tab">
+                    <div class="tab-pane">
+                        <div class="panel-group" id="question-top" role="tablist">
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question7" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            What is the purpose of E-Commerce Payment Charge?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer7" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                The app is designed to add a payment fee in specific payment provider
+                                                with & without condition.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question8" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Can I add payment fees to only one payment provider?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer8" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Yes, the module allows user to add payment fees to only one payment
+                                                provider.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question9" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Can i add different amount of payment fees with or without condition on
+                                            different payment provider?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer9" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Yes, user can add different amount of payment fees with or without
+                                                condition on different payment provider from each payment provider form
+                                                view configurations.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question1" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Is this app compatible with Odoo Community as well as Enterprise?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer1" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Yes, this app works perfectly with Odoo Enterprise (Odoo.sh &
+                                                On-Premise) as well as Community.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question2" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Is this app compatible with Odoo Online?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer2" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                No, this app will not work for Odoo Online.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question3" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            How to contact if there is need of any Customization?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer3" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Please contact us on <b>support@creyox.com</b>
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question4" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Do I get free support when I buy these app?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer4" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Yes, we give free support when you buy these app for 60 Days.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question5" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            Do I need to buy all versions separately paying for each version?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer5" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                Yes, you need to pay different prices of app version wise.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="panel panel-default shadow rounded bg-white"
+                                 style="padding:20px; margin-bottom:20px">
+                                <div class="panel-heading" role="tab" id="question6" style="border:0; padding:0">
+                                    <h4 class="panel-title" style="margin:0">
+                                        <a role="button" data-bs-toggle="collapse" data-bs-parent="#accordion"
+                                           href="#collapseOne" aria-expanded="true" aria-controls="collapseOne"
+                                           style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
+                                            <span class="fa fa-question-circle"
+                                                  style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            The app i paid for is not working, What should i do?
+                                        </a>
+                                    </h4>
+                                </div>
+                                <div id="answer6" class="panel-collapse collapse show" role="tabpanel"
+                                     aria-labelledby="headingOne">
+                                    <div class="panel-body" style="padding-top:20px">
+                                        <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
+                                            <li style="margin-bottom:0px">
+                                                You can raise a Ticket on <b>support@creyox.com</b> we'll get back to
+                                                you with fixes.
+                                            </li>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-5">
+                            <div class="col-12 col-md-12 text-center text-md-left">
+                                <center><h1 style="color: #000099;"></h1></center>
+                            </div>
+                        </div>
+
+                        <div class="pr-5" style="font-size: 1.6rem; font-weight: 600; color: #0b3b52;">
+                            <br/>
+                            <center><a style="text-align: center; color: #000099;" target="_blank"
+                                       href="https://apps.odoo.com/apps/modules/browse?author=Creyox Technologies"><i
+                                    class="fa fa-list"></i> OUR MORE APPS</a></center>
+                            <br/>
+                            <center>
+                                <div style="border: 1px solid black;width:50%;"></div>
+                            </center>
+                        </div>
+
+                        <div class="row mb-5">
+                            <div class="col-12 col-md-12 text-center text-md-left" style="margin-top: 40px;">
+                                <center><h1 style="color: #000099;"><i class="fa fa-handshake-o"
+                                                                       style="color: #B87333;"></i> Our
+                                    Services <i class="fa fa-handshake-o" style="color: #B87333;"></i></h1></center>
+                            </div>
+                        </div>
+                        <div class="container" style="width: 100%; height:100%;">
+                            <div class="row">
+                                <div class="col-md-3 text-center">
+                                    <div class="box p-4 shadow rounded mb-2"
+                                         style="background-color: #99b3ff;border: 2px solid #000099;border-radius: 0.25rem !important;">
+                                        <a href="mailto:support@creyox.com" target="_blank"
+                                           style="text-decoration: none;">
+                                            <div class="icon_img mb-2">
+                                                <h3><i class="fa fa-cloud-upload" style="color: #000099;"></i></h3>
+                                            </div>
+                                            <div class="content">
+                                                <p class="mb-0"
+                                                   style="font-size: 18px;color: #000099;font-weight: bold;">
+                                                    Odoo <br/>Implementation
+                                                </p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="box p-4 shadow rounded mb-2"
+                                         style="background-color: #99ff99;border: 2px solid #006600;border-radius: 0.25rem !important;">
+                                        <a href="mailto:support@creyox.com" target="_blank"
+                                           style="text-decoration: none;">
+                                            <div class="icon_img mb-2">
+                                                <h3><i class="fa fa-gear" style="color: #006600;"></i></h3>
+                                            </div>
+                                            <div class="content">
+                                                <p class="mb-0"
+                                                   style="font-size: 18px;color: #006600;font-weight: bold;">
+                                                    Odoo <br/>
+                                                    Customization</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="box p-4 shadow rounded mb-2"
+                                         style="background-color: #ff9980;border: 2px solid #b32400;border-radius: 0.25rem !important;">
+                                        <a href="mailto:support@creyox.com" target="_blank"
+                                           style="text-decoration: none;">
+                                            <div class="icon_img mb-2">
+                                                <h3><i class="fa fa-exchange" style="color: #b32400;"></i></h3>
+                                            </div>
+                                            <div class="content">
+                                                <p class="mb-0"
+                                                   style="font-size: 18px;color: #b32400;font-weight: bold;">
+                                                    Odoo <br/>
+                                                    Migration</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                                <div class="col-md-3 text-center">
+
+                                    <div class="box p-4 shadow rounded mb-2"
+                                         style="background-color: #ffe699;border: 2px solid #997300;border-radius: 0.25rem !important;">
+                                        <a href="mailto:support@creyox.com" target="_blank"
+                                           style="text-decoration: none;">
+                                            <div class="icon_img mb-2">
+                                                <h3><i class="fa fa-users" style="color: #997300;"></i></h3>
+                                            </div>
+                                            <div class="content">
+                                                <p class="mb-0"
+                                                   style="font-size: 18px;color: #997300;font-weight: bold;">
+                                                    Support &<br>
+                                                    Maintenance</p>
+                                            </div>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <!-- <div class="pr-5" style="font-size: 1.6rem; font-weight: 600; color: #0b3b52;">
+                                <br/>
+                                <center><a style="text-align: center; color: light green;" href="mailto:support@creyox.com"><i class="fa fa-envelope"></i> Email Us</a></center>
+                            </div> -->
+                        </div>
+</main>
+
+<link href="https://apps.odoocdn.com/web/content/7247337-184ae0e/1/web.assets_frontend.css" rel="stylesheet">
+<link rel="stylesheet" type="text/css" href="style.css">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+<!--<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>-->
+</body>
+</html>
+

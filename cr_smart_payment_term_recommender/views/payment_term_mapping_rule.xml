@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="payment_term_mapping_rule_tree_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Mapping Rule Tree View</field>
+        <field name="model">payment.term.mapping.rule</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="score_min"/>
+                <field name="score_max"/>
+                <field name="payment_term_id"/>
+                <field name="active"/>
+            </tree>
+        </field>
+    </record>
+    <record id="payment_term_mapping_rule_form_view_id" model="ir.ui.view">
+        <field name="name">Payment Term Mapping Rule Form View</field>
+        <field name="model">payment.term.mapping.rule</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="score_min"/>
+                        <field name="score_max"/>
+                        <field name="payment_term_id"/>
+                        <field name="active"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="payment_term_mapping_rule_action_id" model="ir.actions.act_window">
+        <field name="name">Payment Term Score</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">payment.term.mapping.rule</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem name="Payment Term Mapping" id="payment_term_mapping_rule_child_item_2" parent="payment_term_matrix_parent_menu_id" action="payment_term_mapping_rule_action_id"/>
+</odoo>

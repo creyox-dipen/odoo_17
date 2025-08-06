@@ -1,0 +1,81 @@
+<odoo>
+    <!-- All The Predefined Payment Terms -->
+    <record id="payment_term_average_days_id" model="payment.term.matrix">
+        <field name="name">Average Days to Pay</field>
+        <field name="code">avg_days_to_pay</field>
+        <field name="description">Avg. days taken by customer to pay invoices</field>
+        <field name="type">days</field>
+    </record>
+    <record id="payment_term_on_time_payment" model="payment.term.matrix">
+        <field name="name">On-Time Payment %</field>
+        <field name="code">on_time_percent</field>
+        <field name="description">% of invoices paid on or before due date</field>
+        <field name="type">percent</field>
+    </record>
+    <record id="payment_term_overdue_invoice_count" model="payment.term.matrix">
+        <field name="name">Overdue Invoice Count</field>
+        <field name="code">overdue_invoice_count</field>
+        <field name="description">Number of unpaid invoices with due date before today.</field>
+        <field name="type">numeric</field>
+    </record>
+    <record id="payment_term_oldest_overdue_age" model="payment.term.matrix">
+        <field name="name">Oldest Overdue Age</field>
+        <field name="code">oldest_overdue_age</field>
+        <field name="description">Days since the due date of the oldest overdue invoice.</field>
+        <field name="type">days</field>
+    </record>
+    <record id="payment_term_order_frequency" model="payment.term.matrix">
+        <field name="name">Order Frequency (Monthly)</field>
+        <field name="code">order_frequency_monthly</field>
+        <field name="description">Average orders per month over the last 6 months.</field>
+        <field name="type">count</field>
+    </record>
+    <record id="payment_term_sales_volume" model="payment.term.matrix">
+        <field name="name">Sales Volume (Last 6 Months)</field>
+        <field name="code">sales_volume_6mo</field>
+        <field name="description">Total confirmed sales in last 6 months</field>
+        <field name="type">monetary</field>
+    </record>
+    <record id="payment_term_outstanding_balance" model="payment.term.matrix">
+        <field name="name">Outstanding Balance</field>
+        <field name="code">outstanding_balance</field>
+        <field name="description">Unpaid amount from all open invoices.</field>
+        <field name="type">monetary</field>
+    </record>
+    <record id="payment_term_credit_notes_per_invoice_ratio" model="payment.term.matrix">
+        <field name="name">Credit Notes per Invoice Ratio</field>
+        <field name="code">credit_note_ratio</field>
+        <field name="description">Ratio of refund invoices to total invoices.</field>
+        <field name="type">ratio</field>
+    </record>
+    <record id="payment_term_days_since_last_payment" model="payment.term.matrix">
+        <field name="name">Days Since Last Payment</field>
+        <field name="code">days_since_last_payment</field>
+        <field name="description">Number of days since customer last paid any invoice.</field>
+        <field name="type">days</field>
+    </record>
+    <record id="payment_term_first_sale_age" model="payment.term.matrix">
+        <field name="name">First Sale Age</field>
+        <field name="code">first_sale_age</field>
+        <field name="description">Days since customer's first sale.</field>
+        <field name="type">days</field>
+    </record>
+    <record id="payment_term_avg_order_value" model="payment.term.matrix">
+        <field name="name">Avg Order Value</field>
+        <field name="code">avg_order_value</field>
+        <field name="description">Average sale order amount.</field>
+        <field name="type">monetary</field>
+    </record>
+    <record id="payment_term_invoice_dispute_count" model="payment.term.matrix">
+        <field name="name">Invoice Dispute Count</field>
+        <field name="code">dispute_count</field>
+        <field name="description">Number of invoices marked as dispute or reversed.</field>
+        <field name="type">count</field>
+    </record>
+    <record id="payment_term_invoice_volume_per_month" model="payment.term.matrix">
+        <field name="name">Invoice Volume per Month</field>
+        <field name="code">invoice_volume_monthly</field>
+        <field name="description">Average number of invoices per month (past 6 months).</field>
+        <field name="type">count</field>
+    </record>
+</odoo>

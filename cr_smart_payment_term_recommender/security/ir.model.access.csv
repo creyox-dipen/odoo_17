@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+payment_term_matrix_id,payment_term_matrix,model_payment_term_matrix,,1,0,0,0
+payment_term_matrix_rule_id,payment_term_matrix_rule,model_payment_term_matrix_rule,,1,1,1,1
+payment_term_matrix_rule_line_id,payment_term_matrix_rule_line,model_payment_term_matrix_rule_line,,1,1,1,1
+payment_term_mapping_rule_id,payment_term_mapping_rule,model_payment_term_mapping_rule,,1,1,1,1
