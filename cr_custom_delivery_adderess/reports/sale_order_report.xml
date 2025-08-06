@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-
 <odoo>
     <template id="inherited_saleorder_report_id" inherit_id="sale.report_saleorder_document">
 

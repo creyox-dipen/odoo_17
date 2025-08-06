@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-
 <odoo>
-
 <!--  customizing shipping address in delivery slip   -->
 <template id="inherited_delivery_slip_report_id" inherit_id="stock.report_delivery_document">
     <xpath expr="//div[@t-out='o.move_ids[0].partner_id or o.partner_id']" position="replace">

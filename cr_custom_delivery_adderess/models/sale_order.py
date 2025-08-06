@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Part of Creyox Technologies.
-
 from odoo import models, fields, api
 
 class SaleOrder(models.Model):
@@ -16,7 +15,6 @@ class SaleOrder(models.Model):
     @api.onchange('partner_id')
     def get_customer_address(self):
         customer = self.partner_id
-
         self.custom_zip = customer.zip
         self.custom_city = customer.city
         self.custom_street = customer.street

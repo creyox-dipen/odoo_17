@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-
 <odoo>
     <record id="custom_address_sale_order_form_view" model="ir.ui.view">
         <field name="name">sale.order.form.custom.delivery.address</field>
