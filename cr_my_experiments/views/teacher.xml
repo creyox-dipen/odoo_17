@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+
+    <record id="teacher_model_tree_view_id" model="ir.ui.view">
+        <field name="name">teacher tree view</field>
+        <field name="model">teacher.model</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="age"/>
+                <field name="salary"/>
+                <field name="country"/>
+                <field name="gender"/>
+                <field name="is_hod"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="teacher_model_form_view_id" model="ir.ui.view">
+        <field name="name">teacher form view</field>
+        <field name="model">teacher.model</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="age"/>
+                        <field name="salary"/>
+                        <field name="country"/>
+                        <field name="gender"/>
+                        <field name="is_hod"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="teacher_model_action_id" model="ir.actions.act_window">
+        <field name="name">teacher model action</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">teacher.model</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem name="Teacher" id="teacher_model_parent_menu_id" parent="student_main_menu_id" sequence="2"/>
+    <menuitem name="Teacher" id="teacher_model_child_menu_item_1_id" parent="teacher_model_parent_menu_id" action="teacher_model_action_id"/>
+</odoo>

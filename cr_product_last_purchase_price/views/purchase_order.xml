@@ -1,0 +1,12 @@
+<odoo>
+    <record id="inherited_product_product_tree_view_id" model="ir.ui.view">
+        <field name="name">inherited product.product tree view</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="product.product_product_tree_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/tree//field[@name='product_template_variant_value_ids']" position="after">
+                <field name="last_price"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

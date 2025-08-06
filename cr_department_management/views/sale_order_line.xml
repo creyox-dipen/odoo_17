@@ -1,0 +1,26 @@
+<odoo>
+    <record id="sale_order__view_id" model="ir.ui.view">
+        <field name="name">sale_order__view</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="sale.view_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/notebook/page/field[@name='order_line']/tree/field[@name='name']" position="after">
+                <field name="split"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="sale_order_line_server_action_id" model="ir.actions.server">
+        <field name="name">split</field>
+        <!-- model_id : the method we give in code field that comes from this model, odoo search that method in this model -->
+        <field name="model_id" ref="cr_department_management.model_sale_order"/>
+        <!-- binding_model_id : it defines that where to show this action_server -->
+        <!-- model name must be same in model_id and binding_model_id only module name can be different -->
+        <field name="binding_model_id" ref="sale.model_sale_order"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.split()
+        </field>
+    </record>
+</odoo>

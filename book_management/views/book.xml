@@ -1,0 +1,87 @@
+<odoo>
+
+    <record id="book_search_view_id" model="ir.ui.view">
+        <field name="name">book.search.view</field>
+        <field name="model">book_model</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="title"/>
+                <field name="description"/>
+                <field name="price"/>
+                <field name="feedback"/>
+                <field name="publishdate"/>
+                <field name="category"/>
+                <field name="image"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="book_pivot_view_id" model="ir.ui.view">
+        <field name="name">book.pivot.view</field>
+        <field name="model">book_model</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="price" type="row"/>
+                <field name="price" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="book_graph_view_id" model="ir.ui.view">
+        <field name="name">book.graph.view</field>
+        <field name="model">book_model</field>
+        <field name="arch" type="xml">
+            <graph>
+                <field name="price"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="book_tree_view_id" model="ir.ui.view">
+        <field name="name">book.tree.view</field>
+        <field name="model">book_model</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="title"/>
+                <field name="description"/>
+                <field name="price"/>
+                <field name="feedback"/>
+                <field name="publishdate"/>
+                <field name="category"/>
+                <field name="image"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="book_form_id" model="ir.ui.view">
+        <field name="name">Book.form.view</field>
+        <field name="model">book_model</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="title"/>
+                        <field name="description"/>
+                        <field name="price"/>
+                        <field name="feedback"/>
+                        <field name="publishdate"/>
+                        <field name="category"/>
+                        <field name="image"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="book_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Book</field>
+        <field name="res_model">book_model</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+    </record>
+
+
+    <menuitem id="book_child_menu_id" sequence="1" parent="author_parent_menu_id" name="Book"></menuitem>
+    <menuitem id="book_sub_item1_id" parent="book_child_menu_id" action="book_action_id" name="Book"></menuitem>
+
+</odoo>

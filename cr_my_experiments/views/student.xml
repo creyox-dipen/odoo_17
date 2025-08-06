@@ -1,0 +1,50 @@
+<odoo>
+    <record id="my_student_model_tree_view" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.tree.view</field> <!-- name you want to give -->
+        <field name="model">student.model</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+            <tree>
+                <header>
+                    <button string="call" name="general_method" class="oe_highlight" type="object"/>
+                </header>
+                <field name="name"/>
+                <field name="enno"/>
+                <field name="email"/>
+                <field name="city"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="my_student_model_form_view" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.form.view</field> <!-- name you want to give -->
+        <field name="model">student.model</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="enno"/>
+                        <field name="email"/>
+                        <field name="city"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="student_model_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Products</field>
+        <field name="res_model">student.model</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Item-2 -->
+    <menuitem id="student_main_menu_id" name="Student_management"/>
+    <menuitem id="student_parent_menu" sequence="1" parent="student_main_menu_id" name="Student"/>
+    <!-- sub item of menu item2 -->
+    <menuitem id="student_menu_items_1" parent="student_parent_menu" action="student_model_action_id"
+              name="Student"/>
+</odoo>

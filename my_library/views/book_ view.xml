@@ -1,0 +1,40 @@
+<odoo>
+    <!-- Form View: What a single record looks like -->
+    <record id="view_book_form" model="ir.ui.view">
+        <field name="name">library.book.form</field>
+        <field name="model">library.book</field>
+        <field name="arch" type="xml">
+            <form string="Book">
+                <group>
+                    <field name="name"/>
+                    <field name="author"/>
+                    <field name="date_published"/>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <!-- Tree View: List of all records -->
+    <record id="view_book_tree" model="ir.ui.view">
+        <field name="name">library.book.tree</field>
+        <field name="model">library.book</field>
+        <field name="arch" type="xml">
+            <tree string="Books">
+                <field name="name"/>
+                <field name="author"/>
+                <field name="date_published"/>
+            </tree>
+        </field>
+    </record>
+
+    <!-- Action: Link the views to a menu -->
+    <record id="action_book" model="ir.actions.act_window">
+        <field name="name">Books</field>
+        <field name="res_model">library.book</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <!-- Menu Items -->
+    <menuitem id="menu_library_root" name="Library"/>
+    <menuitem id="menu_library_books" name="Books" parent="menu_library_root" action="action_book"/>
+</odoo>

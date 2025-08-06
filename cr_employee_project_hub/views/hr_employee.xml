@@ -1,0 +1,85 @@
+<odoo>
+
+    <record id="hr_employee_inherited_form_view_id" model="ir.ui.view">
+        <field name="name">hr.employee.inherited.form.view</field>
+        <field name="model">hr.employee</field>
+        <field name="inherit_id" ref="hr.view_employee_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/notebook" position="before">
+                <field name="training_record_ids"/>
+            </xpath>
+            <xpath expr="//div[@name='button_box']" position="inside">
+                <button name="show_training_history" icon="fa-users" type="object" string="Training History"/>
+            </xpath>
+            <xpath expr="/form//header" position="inside">
+                <button name="toggle_status" string="Change Status" type="object" class="oe_highlight"/>
+                <button string="Generate Excel Report" type="object" name="generate_excel_report" class="oe_highlight"/>
+                <field name="status" widget="statusbar"/>
+            </xpath>
+        </field>
+    </record>
+
+    <template id="employee_training_pdf_report_template_id">
+        <t t-call="web.external_layout">
+            <main>
+                <div class="page">
+                    <div>
+                        <t t-foreach="docs" t-as="doc">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h1 class="text-primary"><t t-esc="doc.name"/></h1>
+                                </div>
+                                <div class="col-6">
+                                    <h1 class="text-primary"><t t-esc="doc.job_id.name"/></h1>
+                                </div>
+                            </div>
+                            <div class="row mxt-5">
+                                <div class="col-6">
+                                    <h6><strong>Phone no : </strong><t t-esc="doc.work_phone"/></h6>
+                                    <h6><strong>Email : </strong><t t-esc="doc.work_email"/></h6>
+                                </div>
+                                <div class="col-6">
+                                    <h6><strong>Department : </strong><t t-esc="doc.department_id.name"/></h6>
+                                    <h6><strong>Company : </strong><t t-esc="doc.company_id.name"/></h6>
+                                </div>
+                            </div>
+
+                            <table class="table mt-5">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Employee</th>
+                                        <th scope="col">Training</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Feedback</th>
+                                        <th scope="col">Job Title</th>
+                                    </tr>
+                                </thead>
+                                <t t-foreach="doc.training_record_ids" t-as="rec">
+                                    <tr class="mt-5">
+                                        <td><t t-esc="rec.employee_id.name"/></td>
+                                        <td><t t-esc="rec.training_id.name"/></td>
+                                        <td><t t-esc="rec.status"/></td>
+                                        <td><t t-esc="rec.feedback"/></td>
+                                        <td><t t-esc="rec.employee_job_title"/></td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <record id="training_session_pdf_report_id" model="ir.actions.report">
+        <field name="name">Print Employee Training PDF Report</field>
+        <field name="model">hr.employee</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cr_employee_project_hub.employee_training_pdf_report_template_id</field>
+        <field name="report_file">cr_employee_project_hub.employee_training_pdf_report_template_id</field>
+        <field name="binding_model_id" ref="hr.model_hr_employee"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Training Session Pdf Report'</field> <!-- name of the report -->
+    </record>
+
+</odoo>

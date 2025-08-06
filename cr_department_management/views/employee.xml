@@ -1,0 +1,137 @@
+<odoo>
+    <record id="employee_tree_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">employee.tree.view</field> <!-- name you want to give -->
+        <field name="model">employee.employee</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="image"/>
+                <field name="street"/>
+                <field name="city"/>
+                <field name="zip"/>
+                <field name="state_id"/>
+                <field name="country_id"/>
+                <field name="birthdate"/>
+                <field name="age"/>
+                <field name="mobile"/>
+                <field name="email"/>
+                <field name="barcode"/>
+                <field name="job_time"/>
+                <field name="notes"/>
+                <field name="remarks"/>
+                <field name="is_hod"/>
+                <field name="active"/>
+                <field name="activity_ids" widget="list_activity"/>
+                <!--                    <button type="object" name="testApi" class="oe_highlight" string="get Records"/>-->
+            </tree>
+        </field>
+    </record>
+
+    <record id="employee_pivot_id" model="ir.ui.view">
+        <field name="name">employee.pivot.view</field>
+        <field name="model">employee.employee</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="age" type="row"/>
+                <field name="age" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="employee_graph_id" model="ir.ui.view">
+        <field name="name">employee.graph.view</field>
+        <field name="model">employee.employee</field>
+        <field name="arch" type="xml">
+            <graph>
+                <field name="age"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="employee_form_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">employee.form.view</field> <!-- name you want to give -->
+        <field name="model">employee.employee</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+            <form string=" ">
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="image"/>
+                            <field name="street"/>
+                            <field name="city"/>
+                            <field name="zip"/>
+                            <field name="state_id"/>
+                            <field name="country_id"/>
+                            <field name="birthdate"/>
+                        </group>
+                        <group>
+                            <field name="age"/>
+                            <field name="mobile"/>
+                            <field name="email"/>
+                            <field name="barcode"/>
+                            <field name="job_time"/>
+                            <field name="notes"/>
+                            <field name="remarks"/>
+                            <field name="is_hod"/>
+                            <field name="active"/>
+                        </group>
+                    </group>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="activity_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form>
+        </field>
+    </record>
+
+    <record id="employee_activity_view_id" model="ir.ui.view">
+        <field name="name">employee.activity.view</field>
+        <field name="model">employee.employee</field>
+        <field name="arch" type="xml">
+            <activity string="activity">
+                <templates>
+                    <t t-name="activity-box">
+                        <div class="ms-2">
+                            <div>
+                                <field name="name"/>
+                            </div>
+                            <div>
+                                <field name="city"/>
+                            </div>
+                            <div>
+                                <field name="age"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </activity>
+        </field>
+    </record>
+
+    <record id="employee_calendar_view_id" model="ir.ui.view">
+        <field name="name">employee.calendar.view</field>
+        <field name="model">employee.employee</field>
+        <field name="arch" type="xml">
+            <calendar string="employee Management Calendar" mode="month" date_start="birthdate">
+                <field name="name"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="employee_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Employee</field>
+        <field name="res_model">employee.employee</field>
+        <field name="view_mode">tree,form,pivot,graph,activity,calendar</field>
+    </record>
+
+    <!-- Menu Item-2 -->
+    <menuitem id="employee_parent_menu" sequence="2" parent="dep_parent_main_menu" name="Employees"></menuitem>
+    <!-- sub item of menu item2 -->
+    <menuitem id="employee_menu_items" parent="employee_parent_menu" action="employee_action_id" name="Employees"></menuitem>
+</odoo>

@@ -1,0 +1,71 @@
+<odoo>
+
+    <record id="product_review_report_wizard_id" model="ir.actions.server">
+        <field name="name">Generate Report</field>
+        <field name="model_id" ref="cr_product_reviews.model_product_template"/>
+        <field name="binding_model_id" ref="product.model_product_template"/>
+        <field name="binding_view_types">form</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.get_report_details()
+        </field>
+    </record>
+
+    <record id="product_review_report_wizard_form_view_id" model="ir.ui.view">
+        <field name="name">product_review_report_form_view</field>
+        <field name="model">product.review.report.wizard</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <field name="date1"/>
+                    <field name="date2"/>
+                    <field name="min_rating" widget="priority"/>
+                    <field name="approval_status"/>
+                    <footer>
+                        <button type="object" class="oe_highlight" string="Generate Report"
+                                name="generate_review_report"/>
+                        <button type="object" class="oe_highlight" special="cancel" string="Cancel"/>
+                    </footer>
+                </group>
+            </form>
+        </field>
+    </record>
+
+    <template id="product_review_pdf_report_id">
+        <t t-call="web.external_layout">
+            <main>
+                <div class="page">
+                    <div>
+                        <div class="row">
+                            <div class="col-md-6 col-auto">
+                                <h1 class="mb-9">
+                                    <strong><t t-esc="product_name"/></strong>
+                                </h1>
+                                <t t-foreach="reviews" t-as="review">
+                                    <div>
+                                        <h4><strong>Customer Name : </strong><t t-esc="review['review_customer']"/> </h4>
+                                        <h4><strong>Rating : </strong><t t-esc="review['review_rating']"/> STARS</h4>
+                                        <h4><strong>Comment : </strong><t t-esc="review['review_comment']"/> </h4>
+                                    </div>
+                                    <hr/>
+                                </t>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <record id="product_review_pdf_report_action_id" model="ir.actions.report">
+        <field name="name">Pdf Report</field>
+        <field name="model">product.review.report.wizard</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cr_product_reviews.product_review_pdf_report_id</field>
+        <field name="report_file">cr_product_reviews.product_review_pdf_report_id</field>
+        <field name="binding_model_id" ref="cr_product_reviews.model_product_template"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Product Review Report'</field> <!-- name of the report -->
+    </record>
+
+</odoo>

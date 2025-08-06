@@ -1,0 +1,104 @@
+<odoo>
+    <!-- search view -->
+    <record id="author_search_view_id" model="ir.ui.view">
+        <field name="name">author.search.view</field>
+        <field name="model">author_model</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="age"/>
+                <field name="salary"/>
+                <field name="feedback"/>
+                <field name="birthdate"/>
+                <field name="isIndian"/>
+            </search>
+        </field>
+    </record>
+
+    <!--  pivot view  -->
+    <record id="author_pivot_view_id" model="ir.ui.view">
+        <field name="name">author.pivot.view</field>
+        <field name="model">author_model</field>
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="age" type="row"/>
+                <field name="salary" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <!--  Graph view  -->
+    <record id="author_graph_view_id" model="ir.ui.view">
+        <field name="name">author.graph.view</field>
+        <field name="model">author_model</field>
+        <field name="arch" type="xml">
+            <graph>
+                <field name="age"/>
+                <field name="salary"/>
+            </graph>
+        </field>
+    </record>
+
+    <!--  Tree(List) view  -->
+    <record id="author_tree_view_id" model="ir.ui.view">
+        <field name="name">author.tree.view</field>
+        <field name="model">author_model</field>
+        <field name="arch" type="xml">
+            <tree>
+                <header>
+                    <button class="oe_highlight" type="object" name="model_orm_method" string="demo"/>
+                </header>
+                <field name="name"/>
+                <field name="description"/>
+                <field name="age"/>
+                <field name="salary"/>
+                <field name="feedback"/>
+                <field name="birthdate"/>
+                <field name="isIndian"/>
+                <field name="image"/>
+<!--                <button class="oe_highlight" type="object" name="orm_operation" string="Orm Operation"/>-->
+            </tree>
+        </field>
+    </record>
+
+    <!--  form view  -->
+    <record id="author_form_id" model="ir.ui.view">
+        <field name="name">author.form.view</field>
+        <field name="model">author_model</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button class="oe_highlight" type="object" name="crete_record" string="Create Record"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="id"/>
+                        <field name="name"/>
+                        <field name="description"/>
+                        <field name="age"/>
+                        <field name="salary"/>
+                        <field name="feedback"/>
+                        <field name="birthdate"/>
+                        <field name="isIndian"/>
+                        <field name="image"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="author_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Author</field>
+        <field name="res_model">author_model</field>
+        <field name="view_mode">tree,form,pivot,graph</field>
+        <!-- To set default value from xml side  -->
+<!--        <field name="context">{'default_name': 'Dipen'}</field>-->
+    </record>
+
+    <menuitem id="author_parent_menu_id" name="Author management"></menuitem>
+
+    <menuitem id="author_sub_menu_id" parent="author_parent_menu_id" sequence="2" name="Author"></menuitem>
+    <menuitem id="author_sub_item2_id" parent="author_sub_menu_id" action="author_action_id" name="Author"></menuitem>
+</odoo>

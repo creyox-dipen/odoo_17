@@ -1,0 +1,14 @@
+<odoo>
+
+    <recordd id="purchase_order_excel_report_action_id" model="ir.actions.act_window">
+        <field name="name">generate_last_purchase_report</field>
+        <field name="model_id" ref="purchase.model_purchase_order"/>
+        <field name="binding_model_id" ref="purchase.purchase_order_view_tree"/>
+        <field name="binding_view_types">tree</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.generate_purchase_excel_report()
+        </field>
+    </recordd>
+
+</odoo>

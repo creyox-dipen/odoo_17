@@ -1,0 +1,36 @@
+<odoo>
+
+    <record id="training_manager_group_id" model="res.groups">
+        <field name="name">training.manager.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+    <record id="hr_officer_group_id" model="res.groups">
+        <field name="name">hr.officer.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+    <record id="project_manager_group_id" model="res.groups">
+        <field name="name">project.manager.group</field>
+        <field name="category_id" ref="base.module_category_services_project"/>
+    </record>
+
+    <record id="employee_group_id" model="res.groups">
+        <field name="name">employees.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+    <record id="employee_can_see_own_records_only_id" model="ir.rule">
+        <field name="name">employee.see.own.records</field>
+        <field name="model_id" ref="cr_employee_project_hub.model_training_session"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+
+<!--  Project Manager should only see project related training records  -->
+    <record id="project_manager_record_rule_id" model="ir.rule">
+        <field name="name">project manager see project related training records</field>
+        <field name="model_id" ref="cr_employee_project_hub.model_employee_training_record"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+
+</odoo>

@@ -1,0 +1,276 @@
+<odoo>
+    <record id="department_tree_view_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">department.tree.view</field> <!-- name you want to give -->
+        <field name="model">department.department</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+                <tree>
+                    <field name="name"/>
+                    <field name="code"/>
+                    <field name="no_of_students"/>
+                    <field name="staff_ids"/>
+                    <field name="hod_id"/>
+                    <field name="student_ids"/>
+                    <field name="notes"/>
+                    <field name="active"/>
+                    <field name="activity_ids" widget="list_activity"/>
+                    <button string="test data" type="object" name="testData" class="oe_highlight"/>
+                    <button string="Test filter" type="object" name="testFilter" class="oe_highlight"/>
+                    <button string="Test map" type="object" name="testMap" class="oe_highlight"/>
+                    <button string="Test Unlink" type="object" name="testUnlink" class="oe_highlight"/>
+                    <button string="ShowException" type="object" name="showException" class="oe_highlight"/>
+                    <button string="testPrints" type="object" name="testPrints" class="oe_highlight"/>
+                    <button string="makeSA" type="object" name="makeScheduleAction" class="oe_highlight"/>
+                    <button string="YT" type="object" name="goToYt" class="oe_highlight"/>
+                    <button string="notification" type="object" name="showNotification" class="oe_highlight"/>
+                    <button string="Send Mail" type="object" name="sendMail" class="oe_highlight"/>
+                    <button string="Send Mail" type="object" name="send_mail" class="oe_highlight"/>
+                    <button string="Generate Excel Report" type="object" name="generate_excel_report" class="oe_highlight"/>
+                </tree>
+        </field>
+    </record>
+
+<!--  kanban view(used to show cards like view)  -->
+    <record id="department_kanban_view_id" model="ir.ui.view">
+        <field name="name">department.kanban.view</field>
+        <field name="model">department.department</field>
+        <field name="arch" type="xml">
+            <kanban class="o_res_partner_kanban">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="active"/>
+                <field name="no_of_students"/>
+                <field name="student_ids"/>
+                <templates>
+                    <t t-name="kanban-box">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click">
+                            <div class="mb16">
+                                <strong class="o_kanban_record_title"><field name="name"/></strong>
+                            </div>
+
+                            <div class="o_kanban_record_top">
+                                <field name="code"/>
+                            </div>
+                            <div>
+                                <field name="no_of_students"/>
+                            </div>
+                            <div>
+                                <field name="student_ids"/>
+                            </div>
+                            <div>
+                                <field name="active"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+<!--  Activity View  -->
+    <record id="department_activity_view_id" model="ir.ui.view">
+        <field name="name">department.activity.view</field>
+        <field name="model">department.department</field>
+        <field name="arch" type="xml">
+            <activity string="activity">
+                <templates>
+                    <t t-name="activity-box">
+                        <div class="ms-2">
+                            <div>
+                                <field name="name" class="o_text_block"/>
+                            </div>
+                            <div>
+                                <field name="code"/>
+                            </div>
+                            <div>
+                                <field name="activity_ids"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </activity>
+        </field>
+    </record>
+
+    <record id="department_pivot_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">department.pivot.view</field> <!-- name you want to give -->
+        <field name="model">department.department</field> <!-- name of the model -->
+        <field name="arch" type="xml">
+            <pivot>
+                <field name="no_of_students" type="row"/>
+                <field name="no_of_students" type="col"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="department_graph_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">department.graph.view</field> <!-- name you want to give -->
+        <field name="model">department.department</field> <!-- name of the model -->
+        <field name="arch" type="xml">
+                <graph>
+                    <field name="no_of_students"/>
+                </graph>
+        </field>
+    </record>
+
+    <record id="department_form_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">department.form.view</field> <!-- name you want to give -->
+        <field name="model">department.department</field> <!-- name of the model -->
+        <field name="arch" type="xml">
+                <form>
+                    <sheet>
+                        <div name="button_box">
+                            <button string="Insert Record" type="object" icon="fa-star" name="insertRecord" class="oe_highlight"/>
+                            <button string="Show Total students" type="object" icon="fa-star" name="showTotalStudents" class="oe_highlight">
+                                <field name="no_of_students"/>
+                            </button>
+                        </div>
+                        <group>
+                            <field name="name"/>
+                            <field name="code"/>
+                            <field name="no_of_students"/>
+                            <field name="staff_ids" widget="many2many_tags"/>
+                            <field name="hod_id"/>
+                            <field name="student_ids"/>
+                            <field name="notes"/>
+                            <field name="active"/>
+                        </group>
+                        <notebook>
+                            <page name="department_page_1" string="Department Info">
+                                <field name="name"/>
+                                <field name="code"/>
+                            </page>
+                            <page name="department_page_2" string="Select Staff">
+                                <field name="staff_ids"/>
+                            </page>
+                            <page name="department_page_3" string="Select Student">
+                                <field name="student_ids"/>
+                            </page>
+                        </notebook>
+                    </sheet>
+
+                    <!-- for chatter -->
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+        </field>
+    </record>
+
+    <record id="department_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Department</field>
+        <field name="res_model">department.department</field>
+        <field name="view_mode">tree,form,pivot,graph,kanban,activity</field>
+    </record>
+
+<!--  Server action  -->
+    <record id="my_action_server_id" model="ir.actions.server">
+        <field name="name">my_action_method</field>
+        <field name="model_id" ref="cr_department_management.model_department_department"/>
+        <field name="binding_model_id" ref="cr_department_management.model_department_department"/>
+        <field name="binding_view_types">tree</field>
+        <field name="state">code</field>
+        <field name="code">
+            action = records.testActionMethod()
+        </field>
+    </record>
+
+<!--  ir cron : is used when we want to perform some action at every specific time interval  -->
+    <record id="department_ir_cron_id" model="ir.cron">
+        <field name="name">Remove inactive data</field>
+        <field name="model_id" ref="model_department_department"/>
+        <field name="state">code</field>
+        <field name="code">model.removeInactive()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">minutes</field>
+        <field name="numbercall">-1</field>
+    </record>
+
+    <!--  Email template  -->
+    <record id="department_email_template_id" model="mail.template">
+        <field name="name">Department_Mail</field>
+        <field name="model">department.department</field>
+        <field name="partner_to"> This is email sent by Dipen </field>
+        <field name="email_to">dipen.dev@gmail.com</field>
+        <field name="subject">This is subject</field>
+        <field name="body_html" type="html">
+            <div>
+                <center> <h1>Email template </h1></center>
+                <strong> Dear Customer😊,</strong>
+                <p> welcome to odoo</p>
+                <p> I am {{ context['name'] }}</p>
+                <p> Today's Topic is : <strong> {{ context['topic'] }}</strong></p>
+                <p> Lorem ipsum dolor sit amet, consectetur adipisicing elit. Ad aliquid assumenda at cumque dicta ea, enim illo, illum laborum modi pariatur quas quia quidem quos ratione temporibus ullam voluptatum. At?</p>
+            </div>
+        </field>
+    </record>
+
+    <!--  creating pdf template  -->
+    <template id="department_pdf_report_template_id">
+        <t t-call="web.external_layout">
+            <main>
+                <div class="page">
+                    <div>
+                        <t t-foreach="docs" t-as="doc">
+                            <div class="row">
+                                <div class="col-md-6 col-auto">
+                                    <h1><t t-esc="doc.name"/> # <t t-esc="doc.code"/></h1>
+                                </div>
+                                <div class="col-md-6 col-auto">
+                                    <h3 class="text-danger">Total Students: <t t-esc="doc.no_of_students"/></h3>
+                                </div>
+                            </div>
+                            <table class="table mt-5">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Name</th>
+                                        <th scope="col">Birthdate</th>
+                                        <th scope="col">City</th>
+                                        <th scope="col">Age</th>
+                                        <th scope="col">Type</th>
+                                    </tr>
+                                </thead>
+                                <t t-foreach="doc.student_ids" t-as="stud">
+                                    <tr class="mt-5">
+                                        <td><t t-esc="stud.name"/></td>
+                                        <td><t t-esc="stud.birthdate"/></td>
+                                        <td><t t-esc="stud.city"/></td>
+                                        <td><t t-esc="stud.age"/></td>
+                                        <td><t t-esc="stud.types"/></td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <record id="department_pdf_report_action_id" model="ir.actions.report">
+        <field name="name">Pdf Report</field>
+        <field name="model">department.department</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cr_department_management.department_pdf_report_template_id</field>
+        <field name="report_file">cr_department_management.department_pdf_report_template_id</field>
+        <field name="binding_model_id" ref="cr_department_management.model_department_department"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Department Report'</field> <!-- name of the report -->
+    </record>
+
+
+    <!-- main menu icon -->
+    <menuitem id="dep_parent_main_menu" name="Department Management"></menuitem>
+
+    <!-- Menu Item-3 -->
+    <menuitem id="department_parent_menu" sequence="3" parent="dep_parent_main_menu" name="Departments"></menuitem>
+    <!-- sub item of menu item3 -->
+    <menuitem id="child_items" parent="department_parent_menu" action="department_action_id" name="Departments"></menuitem>
+
+</odoo>

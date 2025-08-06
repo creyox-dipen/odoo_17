@@ -1,0 +1,3 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+book_sec_id,book,model_book_model,,1,1,1,1
+author_sec_id,author,model_author_model,,1,1,1,1

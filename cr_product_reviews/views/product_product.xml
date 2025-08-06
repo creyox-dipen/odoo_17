@@ -1,0 +1,27 @@
+<odoo>
+
+    <record id="product_and_template_form_view__id" model="ir.ui.view">
+        <field name="name">product_form_view</field>
+        <field name="model">product.template</field>
+        <field name="inherit_id" ref="product.product_template_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/notebook/page[@name='general_information']" position="after">
+                <page name="review_page" string="Review">
+                    <field name="review_ids"/>
+                </page>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="product_form_view_smart_button_id" model="ir.ui.view">
+        <field name="name">product_form_view_smart_button</field>
+        <field name="model">product.product</field>
+        <field name="inherit_id" ref="product.product_normal_form_view"/>
+        <field name="arch" type="xml">
+            <xpath expr="/form/sheet/div[@name='button_box']" position="inside">
+                <button string="Reviews" name="show_related_reviews" type="object" icon="fa-star" class="oe.highlight"/>
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

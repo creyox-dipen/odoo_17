@@ -1,0 +1,112 @@
+<odoo>
+
+    <record id="training_session_tree_view_id" model="ir.ui.view">
+        <field name="name">training session tree view</field>
+        <field name="model">training.session</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="name"/>
+                <field name="date"/>
+                <field name="trainer"/>
+                <field name="description"/>
+                <field name="record_ids"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="training_session_form_view_id" model="ir.ui.view">
+        <field name="name">training session form view</field>
+        <field name="model">training.session</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button type="object" class="oe_highlight" string="Generate Excel Report" name="generate_excel_report"/>
+                </header>
+                <div name="button_box">
+                    <button string="Participants" type="object" name="show_all_participants" class="oe_highlight"/>
+                </div>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="date"/>
+                        <field name="trainer"/>
+                        <field name="description"/>
+                        <field name="record_ids"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="training_session_search_view_id" model="ir.ui.view">
+        <field name="name">training.session.search.view</field>
+        <field name="model">training.session</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="date"/>
+                <field name="trainer"/>
+            </search>
+        </field>
+    </record>
+
+    <template id="training_session_pdf_report_template_id">
+        <t t-call="web.external_layout">
+            <main>
+                <div class="page">
+                    <div>
+                        <t t-foreach="docs" t-as="doc">
+                            <div class="row">
+                                <div class="col-6">
+                                    <h1><t t-esc="doc.name"/></h1>
+                                </div>
+                                <div class="col-6">
+                                    <h2 class="text-primary">Date : <t t-esc="doc.date"/></h2>
+                                </div>
+                            </div>
+                            <div>
+                                <div>
+                                    <strong><h3>Trainer : <t t-esc="doc.trainer"/></h3></strong>
+                                </div>
+                                <div class="col-md-6 col-auto">
+                                    <strong><h3>Description : <t t-esc="doc.description"/></h3></strong>
+                                </div>
+                            </div>
+
+                            <table class="table mt-5">
+                                <thead>
+                                    <tr>
+                                        <th scope="col">Employee</th>
+                                        <th scope="col">Training</th>
+                                        <th scope="col">Status</th>
+                                        <th scope="col">Feedback</th>
+                                        <th scope="col">Job Title</th>
+                                    </tr>
+                                </thead>
+                                <t t-foreach="doc.record_ids" t-as="rec">
+                                    <tr class="mt-5">
+                                        <td><t t-esc="rec.employee_id.name"/></td>
+                                        <td><t t-esc="rec.training_id.name"/></td>
+                                        <td><t t-esc="rec.status"/></td>
+                                        <td><t t-esc="rec.feedback"/></td>
+                                        <td><t t-esc="rec.employee_job_title"/></td>
+                                    </tr>
+                                </t>
+                            </table>
+                        </t>
+                    </div>
+                </div>
+            </main>
+        </t>
+    </template>
+
+    <record id="training_session_pdf_report_id" model="ir.actions.report">
+        <field name="name">Print Training Report</field>
+        <field name="model">training.session</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">cr_employee_project_hub.training_session_pdf_report_template_id</field>
+        <field name="report_file">cr_employee_project_hub.training_session_pdf_report_template_id</field>
+        <field name="binding_model_id" ref="cr_employee_project_hub.model_training_session"/>
+        <field name="binding_type">report</field>
+        <field name="print_report_name">'Training Session Pdf Report'</field> <!-- name of the report -->
+    </record>
+</odoo>

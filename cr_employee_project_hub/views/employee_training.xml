@@ -1,0 +1,52 @@
+<odoo>
+
+    <record id="employee_training_records_tree_view_id" model="ir.ui.view">
+        <field name="name">employee_training_record_tree_view</field>
+        <field name="model">employee.training.record</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="employee_id"/>
+                <field name="training_id"/>
+                <field name="status"/>
+                <field name="feedback"/>
+                <field name="employee_job_title"/>
+                <field name="training_date"/>
+                <field name="training_trainer"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="employee_training_records_form_view_id" model="ir.ui.view">
+        <field name="name">employee.training.records.form.view</field>
+        <field name="model">employee.training.record</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button type="object" string="Start Training" name="start_employee_training" class="oe_highlight"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="employee_id"/>
+                        <field name="training_id"/>
+                        <field name="status"/>
+                        <field name="feedback"/>
+                        <field name="employee_job_title"/>
+                        <field name="training_date"/>
+                        <field name="training_trainer"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="employee_training_record_search_view_id" model="ir.ui.view">
+        <field name="name">employee.training.record.search.view</field>
+        <field name="model">employee.training.record</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="employee_id"/>
+                <field name="status"/>
+            </search>
+        </field>
+    </record>
+</odoo>

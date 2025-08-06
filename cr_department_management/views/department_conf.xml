@@ -1,0 +1,48 @@
+<odoo>
+<!--    <record id="depconf_tree_view_id" model="ir.ui.view"> &lt;!&ndash; id we want to give &ndash;&gt;-->
+<!--        &lt;!&ndash; these 3 fields are common in every view &ndash;&gt;-->
+<!--        <field name="name">depconf.tree.view</field> &lt;!&ndash; name you want to give &ndash;&gt;-->
+<!--        <field name="model">department.conf</field> &lt;!&ndash; name from the model &ndash;&gt;-->
+<!--        <field name="arch" type="xml">-->
+<!--                <tree>-->
+<!--                    <field name="type"/>-->
+<!--                    <field name="name"/>-->
+<!--                    <field name="code"/>-->
+<!--                    <field name="department_id" />-->
+<!--&lt;!&ndash;                    canceProcess&ndash;&gt;-->
+<!--&lt;!&ndash;                    <button string="Cancel" type="object" name="canceProcess" class="oe_highlight"/>&ndash;&gt;-->
+<!--                </tree>-->
+<!--        </field>-->
+<!--    </record>-->
+
+    <record id="depconf_form_view_id" model="ir.ui.view">
+        <field name="name">depconf.form.view</field>
+        <field name="model">department.conf</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="type"/>
+                        <field name="name"/>
+                        <field name="code"/>
+                        <field name="department_id" invisible="type != 'write'"/>
+                        <button string="Process" type="object" name="processData" class="oe_highlight"/>
+                        <button string="Cancel" type="object" special="cancel" class="oe_highlight"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="depconf_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Department Configuration</field>
+        <field name="res_model">department.conf</field>
+        <field name="view_mode">form</field>
+    </record>
+
+    <menuitem id="depconf_parent_menu" sequence="4" parent="dep_parent_main_menu" name="Configuration"></menuitem>
+
+    <menuitem id="depconf_child_item_id" parent="depconf_parent_menu" action="depconf_action_id" name="Department Configuration"></menuitem>
+
+</odoo>

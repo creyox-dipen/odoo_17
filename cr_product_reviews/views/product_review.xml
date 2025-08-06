@@ -1,0 +1,93 @@
+<odoo>
+
+    <record id="product_review_tree_view_id" model="ir.ui.view">
+        <field name="name">product.review.tree.view</field>
+        <field name="model">product.review</field>
+        <field name="arch" type="xml">
+            <tree>
+                <field name="product_id"/>
+                <field name="customer_id"/>
+                <field name="comment"/>
+                <field name="review_date"/>
+                <field name="is_approved"/>
+                <field name="rating" widget="priority"/>
+                <field name="status" widget="statusbar"/>
+                <button name="admin_approve_review" groups="cr_product_reviews.admin_review_manage_access_group_id"
+                        string="Approve" type="object" class="oe_highlight"/>
+                <button name="admin_reject_review" groups="cr_product_reviews.admin_review_manage_access_group_id"
+                        string="Reject" type="object" class="oe_highlight"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="product_review_form_view_id" model="ir.ui.view">
+        <field name="name">product.review.form.view</field>
+        <field name="model">product.review</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="product_id"/>
+                        <field name="customer_id"/>
+                        <field name="comment"/>
+                        <field name="review_date"/>
+                        <field name="is_approved"/>
+                        <field name="rating" widget="priority"/>
+                        <field name="status" widget="statusbar"/>
+                        <button name="admin_approve_review"
+                                groups="cr_product_reviews.admin_review_manage_access_group_id" string="Approve"
+                                type="object" class="oe_highlight"/>
+                        <button name="admin_reject_review"
+                                groups="cr_product_reviews.admin_review_manage_access_group_id" string="Reject"
+                                type="object" class="oe_highlight"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="product_review_search_view_id" model="ir.ui.view">
+        <field name="name">product.review.search.view</field>
+        <field name="model">product.review</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="product_id"/>
+                <field name="rating"/>
+                <field name="is_approved"/>
+                <filter name="last_30_days_reviews" string="Recent Reviews"
+                        domain="[('review_date', '>=', context_today() - relativedelta(days=30))]"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="admin_review_manage_access_group_id" model="res.groups">
+        <field name="name">admin review manage group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+    <record forcecreate="True" id="set_inactive_review_cron_id" model="ir.cron">
+        <field name="name">Inactive Reviews</field>
+        <field name="model_id" ref="model_product_review"/>
+        <field name="state">code</field>
+        <field name="code">model.inactive_older_review()</field>
+        <field name="active" eval="True"/>
+        <field name="user_id" ref="base.user_root"/>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="numbercall">-1</field>
+        <field name="doall" eval="False"/>
+    </record>
+
+    <record id="product_review_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">product Review</field>
+        <field name="res_model">product.review</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem id="product_review_parent_menu_id" name="Product Review"/>
+    <menuitem id="product_review_sub_menu_id" sequence="1" parent="product_review_parent_menu_id"
+              name="Product Review"/>
+    <menuitem id="product_review_sub_menu_item1_id" parent="product_review_sub_menu_id" name="Review"
+              action="product_review_action_id"/>
+</odoo>

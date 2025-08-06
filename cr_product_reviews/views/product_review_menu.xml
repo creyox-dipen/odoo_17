@@ -1,0 +1,22 @@
+<odoo>
+
+    <record id="product_all_reviews_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">product.review.action</field>
+        <field name="res_model">product.review</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <record id="product_approved_reviews_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">product.review.action</field>
+        <field name="res_model">product.review</field>
+        <field name="domain">[('is_approved', '=', False)]</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+
+    <menuitem name="Reviews" sequence="6" id="product_sub_menu___id" parent="stock.menu_stock_root"/>
+
+    <menuitem name="All Reviews" action="product_all_reviews_action_id" sequence="1" id="product_sub_menu_item1_id" parent="product_sub_menu___id"/>
+    <menuitem name="Unapproved Reviews" groups="cr_product_reviews.admin_review_manage_access_group_id" sequence="2" action="product_approved_reviews_action_id" id="product_sub_menu_item2_id" parent="product_sub_menu___id"/>
+</odoo>

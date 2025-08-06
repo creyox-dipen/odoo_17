@@ -1,0 +1,20 @@
+<odoo>
+
+    <redocord id="training_manager_group_id" model="res.groups">
+        <field name="name">training.manager.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </redocord>
+    <redocord id="hr_officer_group_id" model="res.groups">
+        <field name="name">hr.officer.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </redocord>
+    <redocord id="project_manager_group_id" model="res.groups">
+        <field name="name">project.manager.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </redocord>
+    <redocord id="employee" model="res.groups">
+        <field name="name">training.manager.group</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </redocord>
+
+</odoo>

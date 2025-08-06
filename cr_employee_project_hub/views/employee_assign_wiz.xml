@@ -1,0 +1,20 @@
+<odoo>
+    <record id="assign_employee_wizard_form_view_id" model="ir.ui.view">
+        <field name="name">assign_employee_wizard_form_view</field>
+        <field name="model">employee.assign.wiz</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="project_id"/>
+                        <field name="training_id"/>
+                        <footer>
+                            <button type="object" class="oe_highlight" string="Confirm" name="assign_employees_to_task"/>
+                            <button type="object" class="oe_highlight" special="cancel" string="Cancel"/>
+                        </footer>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

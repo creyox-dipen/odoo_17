@@ -1,0 +1,4 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+product__id,product,model_product_model,,1,1,1,1
+category__id,category,model_category_model,,1,1,1,1
+supplier__id,supplier,model_supplier_model,,1,1,1,1

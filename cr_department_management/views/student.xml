@@ -1,0 +1,198 @@
+<odoo>
+
+    <record id="student_search_view_id" model="ir.ui.view">
+        <field name="name">student_search_view</field>
+        <field name="model">student.student</field>
+        <field name="arch" type="xml">
+            <search string="student_search_view">
+                <filter name="check_city_rajkot" string="Check City" domain="[('city', '=', 'rajkot'),]"/>
+                <field name="name"/>
+                <field name="city"/>
+            </search>
+        </field>
+    </record>
+
+<!--  sequence generator using ir.sequence model  -->
+    <record id="seq_sale_order" model="ir.sequence">
+        <field name="name">student sequence</field>
+        <field name="code">student.student</field>
+        <field name="prefix">stud_</field>
+        <field name="padding">5</field>
+        <field name="company_id" eval="False"/>
+    </record>
+
+    <record id="student_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.tree.view</field> <!-- name you want to give -->
+        <field name="model">student.student</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+                <tree>
+                    <field name="seq"/>
+                    <field name="name"/>
+                    <field name="image"/>
+                    <field name="street"/>
+                    <field name="city"/>
+                    <field name="state_id"/>
+                    <field name="country_id"/>
+                    <field name="zip"/>
+                    <field name="birthdate"/>
+                    <field name="age"/>
+                    <field name="mobile" invisible="True"/>
+                    <field name="email"/>
+                    <field name="barcode"/>
+                    <field name="department_id"/>
+                    <field name="types"/>
+                    <field name="notes"/>
+                    <field name="remarks"/>
+                    <field name="is_cr"/>
+                    <field name="cr_start_date"/>
+                    <field name="cr_end_date"/>
+                    <field name="no_of_votes"/>
+                    <field name="active"/>
+                    <field name="dept_code"/>
+                </tree>
+        </field>
+    </record>
+
+    <record id="student_pivot_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.pivot.view</field> <!-- name you want to give -->
+        <field name="model">student.student</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+                <pivot>
+                    <field name="no_of_votes" type="row"/>
+                    <field name="no_of_votes" type="col"/>
+                </pivot>
+        </field>
+    </record>
+
+
+    <record id="student_graph_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.graph.view</field> <!-- name you want to give -->
+        <field name="model">student.student</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+                <graph>
+                    <field name="no_of_votes"/>
+                </graph>
+        </field>
+    </record>
+
+    <record id="student_form_id" model="ir.ui.view"> <!-- id we want to give -->
+        <!-- these 3 fields are common in every view -->
+        <field name="name">student.view</field> <!-- name you want to give -->
+        <field name="model">student.student</field> <!-- name from the model -->
+        <field name="arch" type="xml">
+                <form string=" ">
+                    <sheet>
+                        <group>
+                            <group>
+                                <field name="seq"/>
+                                <field name="name"/>
+                                <field name="image"/>
+                                <field name="street"/>
+                                <field name="city"/>
+                                <field name="state_id"/>
+                                <field name="country_id"/>
+                                <field name="zip"/>
+                                <field name="birthdate"/>
+                                <field name="age"/>
+                                <field name="mobile"/>
+                            </group>
+                            <group>
+                                <field name="email"/>
+                                <field name="barcode"/>
+                                <field name="department_id"/>
+                                <field name="types"/>
+                                <field name="notes"/>
+                                <field name="remarks"/>
+                                <field name="is_cr"/>
+                                <field name="cr_start_date" required="True" invisible="is_cr != True"/>
+                                <field name="cr_end_date" required="True" invisible="is_cr != True"/>
+                                <field name="no_of_votes" required="True" invisible="is_cr != True"/>
+                                <field name="active"/>
+                            </group>
+                        </group>
+                        <notebook>
+                            <page name="page1" string="Intro">
+                                <group>
+                                    <field name="name"/>
+                                    <field name="age"/>
+                                    <field name="birthdate"/>
+                                </group>
+                            </page>
+                            <page name="page2" string="Adderess">
+                                <group>
+                                    <field name="street"/>
+                                    <field name="city"/>
+                                    <field name="country_id"/>
+                                </group>
+                            </page>
+                            <page name="page3" string="department">
+                                <group>
+                                    <field name="department_id"/>
+                                </group>
+                            </page>
+                        </notebook>
+                    </sheet>
+                    <div class="oe_chatter">
+                        <field name="message_follower_ids"/>
+                        <field name="activity_ids"/>
+                        <field name="message_ids"/>
+                    </div>
+                </form>
+        </field>
+    </record>
+
+    <record id="student_activity_view_id" model="ir.ui.view">
+        <field name="name">student.activity.view</field>
+        <field name="model">student.student</field>
+        <field name="arch" type="xml">
+            <activity string="activity">
+                <templates>
+                    <t t-name="activity-box">
+                        <div class="ms-2">
+                            <div>
+                                <field name="name"/>
+                            </div>
+                            <div>
+                                <field name="city"/>
+                            </div>
+                            <div>
+                                <field name="age"/>
+                            </div>
+                        </div>
+                    </t>
+                </templates>
+            </activity>
+        </field>
+    </record>
+
+    <record id="student_calendar_view_id" model="ir.ui.view">
+        <field name="name">student.calendar.view</field>
+        <field name="model">student.student</field>
+        <field name="arch" type="xml">
+            <calendar string="student Management Calendar" mode="month" date_start="birthdate">
+               <field name="name"/>
+           </calendar>
+        </field>
+    </record>
+
+    <record id="url_action_id" model="ir.actions.act_url">
+        <field name="name">Go To google</field>
+        <field name="url">https://www.google.com</field>
+    </record>
+
+    <record id="student_action_id" model="ir.actions.act_window">
+        <field name="type">ir.actions.act_window</field>
+        <field name="name">Student manage</field>
+        <field name="res_model">student.student</field>
+        <field name="view_mode">tree,form,pivot,graph,activity,calendar</field>
+    </record>
+
+    <!-- Menu Item-1 -->
+    <menuitem id="student_parent_menu_id" sequence="1" parent="dep_parent_main_menu" name="Students"/>
+    <!-- sub item of menu item1 -->
+    <menuitem id="student_menu_items" parent="student_parent_menu_id" action="student_action_id" name="Students"/>
+    <menuitem id="student_google_url_menu_id" parent="student_parent_menu_id" action="url_action_id" name="Google"/>
+</odoo>

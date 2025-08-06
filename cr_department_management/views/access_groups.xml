@@ -1,0 +1,32 @@
+<odoo>
+
+    <!--  created the group of users  -->
+    <!--  Users can be added and removed in group from frontend side from settings -> user & companies -> groups -> search group name  -->
+    <!--  category can be anything we can either create our own or use existing category  -->
+    <!--  we have to provide the group id in csv file to add group and manage permission for a particular model  -->
+    <!--  hods group  -->
+    <record id="hod_group_access_id" model="res.groups">
+        <field name="name">hod_group_access</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+    <!--  Teachers group  -->
+    <record id="teachers_group_access_id" model="res.groups">
+        <field name="name">teachers_group_access</field>
+        <field name="category_id" ref="base.module_category_accounting"/>
+    </record>
+
+
+<!--    <record id="all_permission_access_group_id" model="res.groups">-->
+<!--        <field name="name">all_permission_group</field>-->
+<!--        <field name="category_id" ref="base.module_category_accounting"/>-->
+<!--    </record>-->
+
+    <!--  Access rule  -->
+    <!--  User can only see records that are created by their own in department.department model  -->
+    <record id="user_can_see_own_record_id" model="ir.rule">
+        <field name="name">users own record</field>
+        <field name="model_id" ref="cr_department_management.model_department_department"/>
+        <field name="domain_force">[('create_uid', '=', user.id)]</field>
+    </record>
+</odoo>
