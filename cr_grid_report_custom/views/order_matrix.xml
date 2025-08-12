@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <template id="grid_report_sale_order_inherit_id" inherit_id="sale.report_saleorder_document">
+        <xpath expr="//tbody[@class='sale_tbody']/t[@t-foreach='lines_to_report']" position="replace">
+            <t t-foreach="lines_to_report" t-as="line">
+                <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal"/>
+<!--                <t t-if="line.product_add_mode == 'configurator'">-->
+                    <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                        <t t-if="not line.display_type">
+                            <td name="td_name" t-if="line.product_add_mode == 'configurator'" >
+                                <span t-field="line.name">Bacon Burger</span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1">
+                                <span t-field="line.name">Bacon Burger</span>
+                            </td>
+                            <td name="td_quantity" t-if="line.product_add_mode == 'configurator'" class="text-end">
+                                <span t-field="line.product_uom_qty">3</span>
+                                <span t-field="line.product_uom">units</span>
+                                <span t-if="line.product_packaging_id">
+                                    (
+                                    <span t-field="line.product_packaging_qty"
+                                          t-options="{&quot;widget&quot;: &quot;integer&quot;}"/>
+                                    <span t-field="line.product_packaging_id"/>)
+                                </span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1">
+                                <span t-field="line.product_uom_qty">3</span>
+                                <span t-field="line.product_uom">units</span>
+                                <span t-if="line.product_packaging_id">
+                                    (
+                                    <span t-field="line.product_packaging_qty"
+                                          t-options="{&quot;widget&quot;: &quot;integer&quot;}"/>
+                                    <span t-field="line.product_packaging_id"/>)
+                                </span>
+                            </td>
+                            <td name="td_priceunit" t-if="line.product_add_mode == 'configurator'" class="text-end">
+                                <span t-field="line.price_unit">3</span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1">
+                                <span t-field="line.price_unit">3</span>
+                            </td>
+                            <td t-if="display_discount and line.product_add_mode == 'configurator'" class="text-end">
+                                <span t-field="line.discount">-</span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1">
+                                <span t-field="line.discount">-</span>
+                            </td>
+                            <t t-set="taxes"
+                               t-value="', '.join([(tax.invoice_label or tax.name) for tax in line.tax_id])"/>
+                            <td name="td_taxes" t-if="line.product_add_mode == 'configurator'"
+                                t-attf-class="text-end {{ 'text-nowrap' if len(taxes) &lt; 10 else '' }}">
+                                <span t-out="taxes">Tax 15%</span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1" t-attf-class="text-end {{ 'text-nowrap' if len(taxes) &lt; 10 else '' }}">
+                                <span t-out="taxes">Tax 15%</span>
+                            </td>
+
+                            <td t-if="not line.is_downpayment and line.product_add_mode == 'configurator'" name="td_subtotal" class="text-end o_price_total">
+                                <span t-field="line.price_subtotal">27.00</span>
+                            </td>
+                            <td t-elif="line.product_add_mode == 'matrix' and len(line.attribute_line_ids) == 1">
+                                <span t-field="line.price_subtotal">27.00</span>
+                            </td>
+                        </t>
+                        <t t-elif="line.display_type == 'line_section'">
+                            <td name="td_section_line" colspan="99">
+                                <span t-field="line.name">A section title</span>
+                            </td>
+                            <t t-set="current_section" t-value="line"/>
+                            <t t-set="current_subtotal" t-value="0"/>
+                        </t>
+                        <t t-elif="line.display_type == 'line_note'">
+                            <td name="td_note_line" colspan="99">
+                                <span t-field="line.name">A note, whose content usually applies to the section or
+                                    product above.
+                                </span>
+                            </td>
+                        </t>
+                    </tr>
+
+                    <t t-if="current_section and (line_last or lines_to_report[line_index+1].display_type == 'line_section') and not line.is_downpayment">
+                        <tr class="is-subtotal text-end">
+                            <td name="td_section_subtotal" colspan="99">
+                                <strong class="mr16">Subtotal</strong>
+                                <span t-out="current_subtotal"
+                                      t-options="{&quot;widget&quot;: &quot;monetary&quot;, &quot;display_currency&quot;: doc.currency_id}">
+                                    31.05
+                                </span>
+                            </td>
+                        </tr>
+                    </t>
+<!--                </t>-->
+            </t>
+        </xpath>
+    </template>
+
+<!--    <template id="matrix_inherit_with_totals" inherit_id="product_matrix.matrix">-->
+<!--        <xpath expr="//thead/tr[1]" position="before">-->
+<!--            <t t-set="col_span" t-value="len(grid['header'])"/>-->
+<!--            <tr>-->
+<!--                <th t-att-colspan="(int(col_span / 3) if int(col_span / 3) > 0 else None)">-->
+<!--                    Description:-->
+<!--                    <t t-esc="grid['header'][0]['name']"/>-->
+<!--                </th>-->
+<!--                <th t-att-colspan="(int(col_span / 3) if int(col_span / 3) > 0 else None)">-->
+<!--                    Total Qty:-->
+<!--                    <t t-out="grid['total_qty']"/>-->
+<!--                </th>-->
+<!--                <th t-att-colspan="(int(col_span / 3) + int(col_span % 3) if int(col_span / 3) > 0 else None)">-->
+<!--                    SubTotal:-->
+<!--                    <t t-out="grid['total_subtotal']"/>-->
+<!--                </th>-->
+<!--            </tr>-->
+<!--        </xpath>-->
+<!--    </template>-->
+
+</odoo>

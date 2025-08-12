@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
 # Part of Creyox Technologies.
 {
-    'name': 'smart payment term recommender | payment term prediction | invoice based term suggestion | customer credit analysis | dynamic payment term | odoo payment term module | invoice scoring system | smart invoice terms | automatic term assignment | kpi based term mapping | customer scoring',
-    'author': 'Creyox Technologies',
+    "name": "Smart payment term recommender | Payment term prediction | Invoice based term suggestion | Customer credit analysis | Dynamic payment term | Odoo payment term module | Invoice scoring system | Smart invoice terms | Automatic term assignment | Kpi based term mapping | Customer scoring",
+    "author": "Creyox Technologies",
     "website": "https://www.creyox.com",
-    'support': 'support@creyox.com',
-    'category': 'accounting',
-    'summary': """
+    "support": "support@creyox.com",
+    "category": "Accounting",
+    "summary": """
     The Smart Payment Term Recommender module enhances invoicing efficiency in Odoo by intelligently recommending the most suitable payment terms for customers based on their past invoice behavior and financial history. This tool automates the process of evaluating customer payment performance using predefined scoring rules and KPI-based matrices, helping businesses make informed decisions and reduce credit risks.
     
     When a user selects a customer while creating a new invoice, the module automatically analyzes the customer's historical data—such as average payment days, overdue invoice count, and refund ratios—against a configurable scoring matrix. Based on the final calculated score, the system suggests the most appropriate payment term, improving billing accuracy and customer-specific credit management. For new customers with no prior invoice history, the module displays a custom message, while unmatched score scenarios are clearly flagged to the user.
@@ -40,10 +40,16 @@
     payment rules engine odoo,
     odoo predictive payment term,
     data-driven term suggestion odoo,
+    How to automatically suggest payment terms in Odoo based on customer behavior,
+    How to implement dynamic payment term recommendations in Odoo,
+    How to analyze customer credit behavior for payment term assignment in Odoo,
+    How to use invoice history to predict payment terms in Odoo,
+    How to build a KPI-based payment term scoring system in Odoo,
+    How to improve cash flow by assigning smart payment terms in Odoo,
     """,
     "license": "OPL-1",
     "version": "17.0",
-    'description': """
+    "description": """
     The Smart Payment Term Recommender module enhances invoicing efficiency in Odoo by intelligently recommending the most suitable payment terms for customers based on their past invoice behavior and financial history. This tool automates the process of evaluating customer payment performance using predefined scoring rules and KPI-based matrices, helping businesses make informed decisions and reduce credit risks.
     
     When a user selects a customer while creating a new invoice, the module automatically analyzes the customer's historical data—such as average payment days, overdue invoice count, and refund ratios—against a configurable scoring matrix. Based on the final calculated score, the system suggests the most appropriate payment term, improving billing accuracy and customer-specific credit management. For new customers with no prior invoice history, the module displays a custom message, while unmatched score scenarios are clearly flagged to the user.
@@ -77,20 +83,25 @@
     payment rules engine odoo,
     odoo predictive payment term,
     data-driven term suggestion odoo,
+    How to automatically suggest payment terms in Odoo based on customer behavior,
+    How to implement dynamic payment term recommendations in Odoo,
+    How to analyze customer credit behavior for payment term assignment in Odoo,
+    How to use invoice history to predict payment terms in Odoo,
+    How to build a KPI-based payment term scoring system in Odoo,
+    How to improve cash flow by assigning smart payment terms in Odoo,
     """,
-
-    'depends': ['base', 'account'],
-    'data': [
-        'security/ir.model.access.csv',
-        'views/payment_term_matrix.xml',
-        'views/payment_term_matrix_rule.xml',
-        'views/payment_term_matrix_rule_line.xml',
-        'views/payment_term_mapping_rule.xml',
-        'data/payment_term_matrix_data.xml'
+    "depends": ["base", "account"],
+    "data": [
+        "security/ir.model.access.csv",
+        "views/payment_term_matrix.xml",
+        "views/payment_term_matrix_rule.xml",
+        "views/payment_term_matrix_rule_line.xml",
+        "views/payment_term_mapping_rule.xml",
+        "data/payment_term_matrix_data.xml",
     ],
-    'images': ['static/description/banner.png'],
-    'installable': True,
-    'application': True,
+    "images": ["static/description/banner.png"],
+    "installable": True,
+    "application": True,
     "price": 80,
-    'currency': 'USD'
+    "currency": "USD",
 }

@@ -36,6 +36,6 @@
         <field name="res_model">payment.term.matrix</field>
         <field name="view_mode">tree,form</field>
     </record>
-    <menuitem name="Payment Matrix Configuration" id="payment_term_matrix_parent_menu_id" sequence="40" parent="account.menu_finance"/>
+    <menuitem name="Payment Matrix Configuration" id="payment_term_matrix_parent_menu_id" sequence="30" parent="account.menu_finance"/>
     <menuitem name="Payment Term Matrix" id="payment_term_matrix_child_item_1_id" parent="payment_term_matrix_parent_menu_id" action="payment_term_matrix_action_id"/>
 </odoo>
