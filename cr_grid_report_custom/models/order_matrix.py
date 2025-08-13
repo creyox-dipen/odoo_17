@@ -9,7 +9,6 @@ class SaleOrder(models.Model):
     def get_report_matrixes(self):
         # Call the original method
         matrixes = super().get_report_matrixes()
-        print('execute')
         for matrix in matrixes:
             template_id = matrix.get('product_template_id')
 
@@ -30,8 +29,8 @@ class SaleOrder(models.Model):
                 matrix['product_name'] = tmpl.name
                 matrix['total_qty'] = sum(lines.mapped('product_uom_qty'))
                 matrix['total_subtotal'] = sum(lines.mapped('price_subtotal'))
-                print(matrix.get('total_subtotal'))
-                print(matrix.get('total_qty'))
 
         return matrixes
+
+
 
