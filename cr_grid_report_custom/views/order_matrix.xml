@@ -7,8 +7,11 @@
             <td name="td_name" t-if="line.product_add_mode == 'configurator'">
                 <span t-field="line.name">Bacon Burger</span>
             </td>
+            <td name="td_name" t-elif="line.verify_order()">
+                <span t-field="line.name">Bacon Burger</span>
+            </td>
         </xpath>
-        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[2]"
+        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[@name='td_quantity']"
                position="replace">
             <td name="td_quantity" t-if="line.product_add_mode == 'configurator'" class="text-end">
                 <span t-field="line.product_uom_qty">3</span>
@@ -19,29 +22,52 @@
                     <span t-field="line.product_packaging_id"/>)
                 </span>
             </td>
+            <td name="td_quantity" t-elif="line.verify_order()" class="text-end">
+                <span t-field="line.product_uom_qty">3</span>
+                <span t-field="line.product_uom">units</span>
+                <span t-if="line.product_packaging_id">
+                    (
+                    <span t-field="line.product_packaging_qty" t-options="{&quot;widget&quot;: &quot;integer&quot;}"/>
+                    <span t-field="line.product_packaging_id"/>)
+                </span>
+            </td>
         </xpath>
-        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[3]"
+        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[@name='td_priceunit']"
                position="replace">
             <td name="td_priceunit" t-if="line.product_add_mode == 'configurator'" class="text-end">
                 <span t-field="line.price_unit">3</span>
             </td>
+            <td name="td_priceunit" t-elif="line.verify_order()" class="text-end">
+                <span t-field="line.price_unit">3</span>
+            </td>
         </xpath>
-        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[4]"
+        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[@t-if='display_discount']"
                position="replace">
             <td t-if="display_discount and line.product_add_mode == 'configurator'" class="text-end">
                 <span t-field="line.discount">-</span>
             </td>
+            <td t-elif="display_discount and line.verify_order()" class="text-end">
+                <span t-field="line.discount">-</span>
+            </td>
         </xpath>
-        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[5]"
+        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[@name='td_taxes']"
                position="replace">
             <td name="td_taxes" t-if="line.product_add_mode == 'configurator'"
                 t-attf-class="text-end {{ 'text-nowrap' if len(taxes) &lt; 10 else '' }}">
                 <span t-out="taxes">Tax 15%</span>
             </td>
+            <td name="td_taxes" t-elif="line.verify_order()"
+                t-attf-class="text-end {{ 'text-nowrap' if len(taxes) &lt; 10 else '' }}">
+                <span t-out="taxes">Tax 15%</span>
+            </td>
         </xpath>
-        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[6]"
+        <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[@t-if='not line.is_downpayment']"
                position="replace">
             <td t-if="not line.is_downpayment and line.product_add_mode == 'configurator'" name="td_subtotal"
+                class="text-end o_price_total">
+                <span t-field="line.price_subtotal">27.00</span>
+            </td>
+            <td t-elif="not line.is_downpayment and line.verify_order()" name="td_subtotal"
                 class="text-end o_price_total">
                 <span t-field="line.price_subtotal">27.00</span>
             </td>
@@ -49,23 +75,6 @@
     </template>
 
     <template id="matrix_inherit_with_totals" inherit_id="product_matrix.matrix">
-        <!--        <xpath expr="//thead/tr[1]" position="before">-->
-        <!--            <t t-set="col_span" t-value="len(grid['header'])"/>-->
-        <!--            <tr>-->
-        <!--                <th t-att-colspan="(int(col_span / 3) if int(col_span / 3) > 0 else None)">-->
-        <!--                    Description:-->
-        <!--                    <t t-esc="grid['header'][0]['name']"/>-->
-        <!--                </th>-->
-        <!--                <th t-att-colspan="(int(col_span / 3) if int(col_span / 3) > 0 else None)">-->
-        <!--                    Total Qty:-->
-        <!--                    <t t-out="grid['total_qty']"/>-->
-        <!--                </th>-->
-        <!--                <th t-att-colspan="(int(col_span / 3) + int(col_span % 3) if int(col_span / 3) > 0 else None)">-->
-        <!--                    SubTotal:-->
-        <!--                    <t t-out="grid['total_subtotal']"/>-->
-        <!--                </th>-->
-        <!--            </tr>-->
-        <!--        </xpath>-->
         <xpath expr="//table" position="replace">
             <table t-else="" class="o_view_grid o_product_variant_grid table table-sm table-striped table-bordered">
                 <t t-set="col_span" t-value="len(grid['header'])"/>
