@@ -2,6 +2,36 @@
 <odoo>
 
     <template id="grid_report_sale_order_inherit_id" inherit_id="sale.report_saleorder_document">
+
+        <xpath expr="//t[@t-set='lines_to_report']" position="after">
+            <t t-set="is_header" t-value="doc.verify_saleorder()"/>
+        </xpath>
+        <!--    Headers    -->
+        <xpath expr="//thead/tr/th[@name='th_description']" position="replace">
+            <th name="th_description" t-if="is_header" class="text-start">Description</th>
+        </xpath>
+        <xpath expr="//thead/tr/th[@name='th_quantity']" position="replace">
+            <th name="th_quantity" t-if="is_header" class="text-end">Quantity</th>
+        </xpath>
+        <xpath expr="//thead/tr/th[@name='th_priceunit']" position="replace">
+            <th name="th_priceunit" t-if="is_header" class="text-end">Unit Price</th>
+        </xpath>
+        <xpath expr="//thead/tr/th[@name='th_discount']" position="replace">
+            <th name="th_discount" t-if="display_discount and is_header" class="text-end">
+                <span>Disc.%</span>
+            </th>
+        </xpath>
+
+        <xpath expr="//thead/tr/th[@name='th_taxes']" position="replace">
+            <th name="th_taxes" t-if="is_header" class="text-end">Taxes</th>
+        </xpath>
+
+        <xpath expr="//thead/tr/th[@name='th_subtotal']" position="replace">
+            <th name="th_subtotal" t-if="is_header" class="text-end">
+                <span>Amount</span>
+            </th>
+        </xpath>
+
         <xpath expr="//tbody/t[@t-foreach='lines_to_report']/tr[1]/t[@t-if='not line.display_type']/td[1]"
                position="replace">
             <td name="td_name" t-if="line.product_add_mode == 'configurator'">
@@ -95,7 +125,8 @@
                     </tr>
                     <tr>
                         <t t-foreach="grid['header']" t-as="column_header">
-                            <th class="o_grid_title_header text-center" t-att-colspan="2 if (int(col_span / 3) == 0 and column_header_last) else None">
+                            <th class="o_grid_title_header text-center"
+                                t-att-colspan="2 if (int(col_span / 3) == 0 and column_header_last) else None">
                                 <span t-esc="column_header['name']"/>
                                 <t t-call="product_matrix.extra_price">
                                     <t t-set="price" t-value="column_header.get('price', False)"/>
@@ -108,7 +139,8 @@
                     <t t-foreach="grid['matrix']" t-as="row">
                         <tr>
                             <t t-foreach="row" t-as="cell">
-                                <td t-if="cell.get('name', False)" class="text-start" t-att-colspan="2 if cell_last else None">
+                                <td t-if="cell.get('name', False)" class="text-start"
+                                    t-att-colspan="2 if cell_last else None">
                                     <strong t-esc="cell['name']"/>
                                     <t t-call="product_matrix.extra_price">
                                         <t t-set="price" t-value="cell.get('price', False)"/>

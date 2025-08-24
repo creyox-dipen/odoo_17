@@ -28,6 +28,15 @@ class SaleOrder(models.Model):
 
         return matrixes
 
+    def verify_saleorder(self):
+        for line in self.order_line:
+            if line.product_add_mode == 'configurator':
+                return True
+            elif line.verify_order():
+                return True
+
+        return False
+
 class SaleOrderLine(models.Model):
     _inherit = "sale.order.line"
 
