@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Creyox Technologies.
 
-from odoo import models, fields, api
+from odoo import models, fields
 
-class SaleOrderTemplate(models.Model):
-    _inherit = "sale.order.template"
+class SaleSubscriptionPlan(models.Model):
+    _inherit = "sale.subscription.plan"
     _description = "Add option to create draft invoice"
 
     is_draft = fields.Boolean(string='Draft Invoice')
@@ -14,6 +14,7 @@ class SaleOrder(models.Model):
     _inherit = "sale.order"
 
     def _process_auto_invoice(self, invoice):
-        if self.sale_order_template_id.is_draft:
+        print(self.plan_id.is_draft)
+        if self.plan_id.is_draft:
             return
         return super()._process_auto_invoice(invoice)
