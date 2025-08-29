@@ -1,11 +1,10 @@
 # -*- coding: utf-8 -*-
 # Part of Creyox Technologies.
 {
-    "name": "Custom delivery address | Editable delivery address | One-time shipping location | Delivery order address customization",
-    "author": "Creyox Technologies",
+    "name": "Custom delivery address | Editable delivery address | Delivery order address customization | shipping location customization",
     "website": "https://www.creyox.com",
     "support": "support@creyox.com",
-    "category": "Inventory",
+    "category": "Warehouse",
     "summary": """
     In many industries, such as construction, logistics, or event management, goods are frequently delivered to different temporary locations. The standard Odoo flow requires creating a new contact (or child contact) for each unique delivery address, which can clutter your database and slow down the order entry process. This module provides a practical solution by allowing users to directly enter a custom delivery address on the Sales Order, without the need to create or link a new contact.
 
