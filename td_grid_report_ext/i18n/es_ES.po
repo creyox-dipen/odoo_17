@@ -1,0 +1,68 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* td_grid_report_ext
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-08-20 07:04+0000\n"
+"PO-Revision-Date: 2025-08-20 09:05+0200\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"X-Generator: Poedit 3.6\n"
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "27.00"
+msgstr ""
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "A note, whose content usually applies to the section or product above."
+msgstr ""
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "A section title"
+msgstr ""
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "Bacon Burger"
+msgstr ""
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.matrix_inherit_with_totals
+msgid "Quantity:"
+msgstr "Cantidad:"
+
+#. module: td_grid_report_ext
+#: model:ir.model,name:td_grid_report_ext.model_sale_order
+msgid "Sales Order"
+msgstr "Pedido de venta"
+
+#. module: td_grid_report_ext
+#: model:ir.model,name:td_grid_report_ext.model_sale_order_line
+msgid "Sales Order Line"
+msgstr "Línea de pedido de venta"
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.matrix_inherit_with_totals
+msgid "SubTotal:"
+msgstr "Subtotal:"
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "Tax 15%"
+msgstr ""
+
+#. module: td_grid_report_ext
+#: model_terms:ir.ui.view,arch_db:td_grid_report_ext.grid_report_sale_order_inherit_id
+msgid "units"
+msgstr "uds"

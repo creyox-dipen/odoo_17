@@ -1,0 +1,51 @@
+<odoo>
+    <record id="action_chargebee_subscriptions" model="ir.actions.act_window">
+        <field name="name">Chargebee Subscriptions</field>
+        <field name="res_model">chargebee.subscription</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <record id="view_chargebee_subscription_tree" model="ir.ui.view">
+        <field name="name">chargebee.subscription.tree</field>
+        <field name="model">chargebee.subscription</field>
+        <field name="arch" type="xml">
+            <tree>
+                <button name="action_sync_subscriptions" type="object" string="Sync Subscriptions" class="btn-primary"/>
+                <field name="name"/>
+                <field name="customer_id"/>
+                <field name="status"/>
+                <field name="start_date"/>
+                <field name="end_date"/>
+                <field name="billing_cycle"/>
+                <field name="plan_id"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_chargebee_subscription_form" model="ir.ui.view">
+        <field name="name">chargebee.subscription.form</field>
+        <field name="model">chargebee.subscription</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <button name="action_upgrade_subscription" type="object" string="Upgrade" class="btn-success"/>
+                    <button name="action_downgrade_subscription" type="object" string="Downgrade" class="btn-warning"/>
+                    <button name="action_cancel_subscription" type="object" string="Cancel" class="btn-danger"/>
+                </header>
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="chargebee_id"/>
+                        <field name="customer_id"/>
+                        <field name="status"/>
+                        <field name="start_date"/>
+                        <field name="end_date"/>
+                        <field name="billing_cycle"/>
+                        <field name="plan_id"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <menuitem id="chargebee_subscription_menu" name="Chargebee Subscriptions"
+              parent="chargebee_config_menu" action="action_chargebee_subscriptions"/>
+</odoo>
