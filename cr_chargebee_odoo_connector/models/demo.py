@@ -63,7 +63,7 @@
 #         #     json.dump(business_entities, f, indent=2)
 #     except Exception as e:
 #         print(f'Error: {e}')
-
+import chargebee
 import requests
 from requests.auth import HTTPBasicAuth
 import json
@@ -80,7 +80,7 @@ def fetch_all_business_entities():
     Handles pagination automatically.
     Returns a list of BE dictionaries.
     """
-    url = f'{BASE_URL}/items'
+    url = f'{BASE_URL}/subscriptions'
     all_bes = []
     offset = None
     limit = 100  # Max per page (Chargebee limit)
@@ -103,14 +103,17 @@ def fetch_all_business_entities():
             raise Exception(f'API Error {response.status_code}: {response.text}')
 
         data = response.json()
-        print(f"Items Data : ",data)
+        print(f"Subscriptions Data : ",data)
 
         # Extract BEs
         for entry in data.get('list', []):
-            be = entry['item']
+            be = entry['subscription']
+            be = json.dumps(be, indent=2)
+            quotes = chargebee.Quote.list({"subscription_id[is]": be.id})
             all_bes.append(be)
-            print(json.dumps(be, indent=2))  # Pretty print each BE
+            print(be)  # Pretty print each BE
             print('---')  # Separator
+
 
         # Check for next page
         offset = data.get('next_offset')

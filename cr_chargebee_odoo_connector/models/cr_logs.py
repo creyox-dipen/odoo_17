@@ -24,6 +24,7 @@ class DataProcessingLog(models.Model):
         ('customers', 'Customers'),
         ('taxes', 'Taxes'),
         ('invoices', 'Invoices'),
+        ('subscriptions', 'Subscriptions'),
     ], string='Context', required=True, help="Identifies the context or page the log is related to.")
 
     def _log_data_processing(self, table_name, record_count, status, timespan, initiated_at, cr_configuration_id, context, error_message=''):

@@ -38,6 +38,9 @@ class ChargebeeConfiguration(models.Model):
     invoice_logs_ids = fields.One2many(
         'cr.data.processing.log', compute='_compute_invoice_logs', string="Invoice Logs"
     )
+    subscription_logs_ids = fields.One2many(
+        'cr.data.processing.log', compute='_compute_subscription_logs', string="Subscription Logs"
+    )
     journal_config_ids = fields.One2many(
         comodel_name="journal.configuration", inverse_name="cb_config_id"
     )
@@ -71,6 +74,11 @@ class ChargebeeConfiguration(models.Model):
     def _compute_tax_logs(self):
         for record in self:
             record.tax_logs_ids = record.cr_data_logs_ids.filtered(lambda log: log.cr_context == 'taxes')
+
+    @api.depends('cr_data_logs_ids')
+    def _compute_subscription_logs(self):
+        for record in self:
+            record.subscription_logs_ids = record.cr_data_logs_ids.filtered(lambda log: log.cr_context == 'subscriptions')
 
 
     def toggle_scheduled_action(self):
@@ -128,6 +136,20 @@ class ChargebeeConfiguration(models.Model):
                 'tag': 'display_notification',
                 'params': {
                     'title': 'Chargebee Tax',
+                    'message': f"Successfully Synced",
+                    'type': 'success',
+                    'sticky': False,
+                },
+            }
+
+    def sync_subscription_from_chargebee_(self):
+        self.env['account.move'].sync_subscription_from_chargebee()
+        """Open the wizard or list view depending on records."""
+        return {
+                'type': 'ir.actions.client',
+                'tag': 'display_notification',
+                'params': {
+                    'title': 'Chargebee Subscription',
                     'message': f"Successfully Synced",
                     'type': 'success',
                     'sticky': False,

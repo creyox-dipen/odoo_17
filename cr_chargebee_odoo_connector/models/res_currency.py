@@ -18,12 +18,11 @@ class ResCurrency(models.Model):
         """
         Sync currencies from Chargebee to Odoo's res.currency model.
         """
+        # Initialize Chargebee API
+        chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
+        if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
+            raise UserError(_("Chargebee configuration is incomplete. Please configure the API key and site name."))
         try:
-            # Initialize Chargebee API
-            chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
-            if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
-                raise UserError(_("Chargebee configuration is incomplete. Please configure the API key and site name."))
-
             # Configure Chargebee
             chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
 
