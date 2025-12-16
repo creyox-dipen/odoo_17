@@ -17,8 +17,6 @@ class JournalConfiguration(models.Model):
     @api.model
     def _get_used_company_ids(self):
         used = self.search([]).mapped('company_id').ids
-        print(self.search([]).mapped('company_id').ids)
-        print(used)
         return used
 
     @api.constrains('company_id')

@@ -13,7 +13,6 @@ class ResPartner(models.Model):
     chargebee_customer_id = fields.Char(string="Chargebee Customer ID", help="Customer ID in Chargebee")
 
     def create(self, vals):
-        print(vals)
         return super(ResPartner, self).create(vals)
 
     def export_to_chargebee(self):
@@ -110,7 +109,7 @@ class ResPartner(models.Model):
         new_customers = []  # Track newly created customers
         start_time = datetime.now()
         # Fetch customers from Chargebee
-        customers = chargebee.Customer.list()  # Adjust limit as needed
+        customers = chargebee.Customer.list({"limit": 100})  # Adjust limit as needed
         for customer_data in customers:
             chargebee_customer = customer_data.customer
             customer_company = self.env['res.company'].get_or_create_company_from_chargebee(chargebee_customer.business_entity_id)

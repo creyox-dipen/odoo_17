@@ -41,8 +41,8 @@ class ResCompany(models.Model):
 
         # if no be id provided sync all companies
         url = f"https://{site}.chargebee.com/api/v2/business_entities"
-
-        response = requests.get(url, auth=HTTPBasicAuth(api_key, ""))
+        params = {"limit": 100}
+        response = requests.get(url, params=params, auth=HTTPBasicAuth(api_key, ""))
         if response.status_code != 200:
             raise UserError(_(
                 f"Failed to retrieve Business Entities: {response.text}"

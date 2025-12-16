@@ -113,7 +113,7 @@
     - Accounting teams that require accurate and up-to-date billing data.
     - Businesses aiming to enhance their subscription lifecycle management.
     """,
-    "depends": ["sale_management", "account", "base", "contacts"],
+    "depends": ["sale_management", "account", "base", "contacts", "account_accountant"],
     "data": [
         "views/chargebee_config_views.xml",
         "views/res_partner_views.xml",

@@ -29,7 +29,8 @@ class ProductTemplate(models.Model):
         total_records = 0
         try:
             # Fetch items from Chargebee
-            items = chargebee.Item.list()  # Adjust limit as needed
+            items = chargebee.Item.list({'limit': 100})  # Adjust limit as needed
+            print("length of itemss : ",len(items))
             for item_data in items:
                 item = item_data.item
 
@@ -70,6 +71,7 @@ class ProductTemplate(models.Model):
                         'description': item.description or "",
                         'categ_id': category.id,
                         'currency_id': self.env['res.currency'].search([('name', '=', currency)], limit=1).id,
+                        'company_id': False, # item available to all company
                         'chargebee_id': item.id,
                         'chargebee_created': True,
                         'item_family_id': family.id if family else False,
@@ -84,6 +86,7 @@ class ProductTemplate(models.Model):
                         'description': item.description or "",
                         'categ_id': category.id,
                         'currency_id': self.env['res.currency'].search([('name', '=', currency)], limit=1).id,
+                        'company_id': False, # item available to all company
                         'type': 'consu',  # Set product type, can be 'consu' or 'service' based on your requirement
                         'chargebee_id': item.id,
                         'detailed_type': 'consu',

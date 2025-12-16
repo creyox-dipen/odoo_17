@@ -26,7 +26,7 @@ class AccountTax(models.Model):
         total_records = 0
         try:
             # Fetch invoices from Chargebee
-            invoices = chargebee.Invoice.list()
+            invoices = chargebee.Invoice.list({'limit': 100})
             for inv_data in invoices:
                 invoice = inv_data.invoice
                 invoice_company = self.env['res.company'].get_or_create_company_from_chargebee(

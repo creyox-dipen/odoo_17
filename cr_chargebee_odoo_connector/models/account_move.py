@@ -7,6 +7,7 @@ import chargebee
 from datetime import datetime, timezone
 import logging
 import json
+import pytz
 from dateutil.relativedelta import relativedelta
 
 _logger = logging.getLogger(__name__)
@@ -25,6 +26,22 @@ class AccountMove(models.Model):
         if timestamp:
             return fields.Datetime.to_string(datetime.utcfromtimestamp(timestamp))
         return None
+
+    def convert_timestamp_to_date_for_deffered(self, timestamp):
+        if not timestamp:
+            return None
+
+            # Assume UTC seconds (per Chargebee docs; remove ms safeguard if confirmed unnecessary)
+        dt_utc = datetime.utcfromtimestamp(float(timestamp))
+
+        # Get user's timezone (fallback to UTC)
+        user_tz = self.env.user.tz or 'UTC'
+        tz = pytz.timezone(user_tz)
+
+        # Localize to UTC, convert to user TZ, then extract local date
+        dt_local = pytz.UTC.localize(dt_utc).astimezone(tz)
+
+        return fields.Date.to_string(dt_local.date())
 
     def convert_timestamp_to_utc(timestamp):
         """Convert Unix timestamp to UTC datetime."""
@@ -48,15 +65,9 @@ class AccountMove(models.Model):
         end = datetime.fromtimestamp(ramp_item.end_date)
         billing_period = ramp_item.billing_period or 1
         billing_period_unit = ramp_item.billing_period_unit
-        print("Start : ",start)
-        print("End : ",end)
         delta = relativedelta(end, start)
-        print("delta : ",delta)
         if billing_period_unit == 'month':
             total_months = delta.years * 12 + delta.months
-            print("Delta years : ",delta.years)
-            print("Delta months : ",delta.months)
-            print("total months : ",total_months)
             return total_months // billing_period
 
         if billing_period_unit == 'year':
@@ -75,6 +86,11 @@ class AccountMove(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+
+        # skip if module not completely installed
+        if not self.env.registry.ready:
+            return super().create(vals_list)
+
         invoices = super(AccountMove, self).create(vals_list)
         chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
 
@@ -85,6 +101,9 @@ class AccountMove(models.Model):
         chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
 
         for invoice in invoices:
+            if invoice.move_type == "out_refund":
+                continue
+
             if invoice.chargebee_id:
                 try:
                     # Skip reconciled invoices
@@ -126,7 +145,10 @@ class AccountMove(models.Model):
                             'communication': f"Chargebee Payment: {payment.id}",
                             'move_id': invoice.id,
                         }
-                        odoo_payment = self.env['account.payment.register'].create(payment_vals)
+                        odoo_payment = self.env['account.payment.register'].with_context(
+                            active_model='account.move',
+                            active_ids=invoice.id
+                        ).sudo().create(payment_vals)
                         odoo_payment.action_post()
                         odoo_payment.action_create_payments()
                         total_paid += payment_amount
@@ -155,12 +177,14 @@ class AccountMove(models.Model):
         chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
         try:
             _logger.info("Starting Chargebee credit note sync...")
-            credit_notes = chargebee.CreditNote.list()
+            credit_notes = chargebee.CreditNote.list({'limit': 100})
             for credit_note_data in credit_notes:
                 credit_note = credit_note_data.credit_note
 
+                cn_company = self.env['res.company'].get_or_create_company_from_chargebee(
+                    credit_note.business_entity_id)
                 # Check if the credit note already exists
-                existing_cn = self.env['account.move'].search([('chargebee_id', '=', credit_note.id)], limit=1)
+                existing_cn = self.env['account.move'].sudo().search([('chargebee_id', '=',credit_note.id), ('company_id', '=', cn_company.id)], limit=1)
                 if existing_cn:
                     _logger.info(f"Credit note {existing_cn.name} already exists. Skipping.")
                     continue
@@ -175,8 +199,6 @@ class AccountMove(models.Model):
                     for line in credit_note.line_items
                 ]
 
-                cn_company = self.env['res.company'].get_or_create_company_from_chargebee(
-                    credit_note.business_entity_id)
                 cn_journal_line = chargebee_config.journal_config_ids.filtered(
                     lambda r: r.company_id.id == cn_company.id
                 )[:1]
@@ -205,22 +227,26 @@ class AccountMove(models.Model):
 
     def sync_credit_notes(self, invoice):
         """Fetch and sync credit notes related to an invoice."""
-        print("sync credit note function called")
         try:
-            credit_notes = chargebee.CreditNote.list({"invoice_id": invoice.chargebee_id})
+            if not invoice.chargebee_id:
+                _logger.warning(
+                    "Skipping credit note sync: missing Chargebee invoice ID for invoice %s",
+                    invoice.name
+                )
+                return
+
+            credit_notes = chargebee.CreditNote.list({"reference_invoice_id[is]": invoice.chargebee_id})
             for credit_note_data in credit_notes:
                 credit_note = credit_note_data.credit_note
-
                 # Check if the credit note already exists
-                existing_cn = self.env['account.move'].search([('chargebee_id', '=', credit_note.id)], limit=1)
-
+                existing_cn = self.env['account.move'].sudo().search([('chargebee_id', '=', credit_note.id), ('company_id', '=', invoice.company_id.id)], limit=1)
                 if not existing_cn:
                     # Prepare credit note lines
                     credit_note_lines = [
                         (0, 0, {
                             'name': line.description,
                             'quantity': 1,
-                            'price_unit': line.amount / 100,  # Negative for credit notes
+                            'price_unit': -line.amount / 100,  # Negative for credit notes
                             'tax_ids': [],  # Populate tax_ids if applicable
                         })
                         for line in credit_note.line_items
@@ -238,7 +264,7 @@ class AccountMove(models.Model):
                     )
 
                     # Create credit note in Odoo
-                    self.env['account.move'].create({
+                    new_cn = self.env['account.move'].create({
                         'move_type': 'out_refund',
                         'partner_id': invoice.partner_id.id,
                         'chargebee_id': credit_note.id,
@@ -268,7 +294,7 @@ class AccountMove(models.Model):
         try:
             start_time = datetime.now()
             total_records = 0
-            invoices = chargebee.Invoice.list()
+            invoices = chargebee.Invoice.list({"limit": 100})
             for inv_data in invoices:
                 invoice = inv_data.invoice
 
@@ -279,9 +305,8 @@ class AccountMove(models.Model):
 
                 invoice_company = self.env['res.company'].get_or_create_company_from_chargebee(
                     invoice.business_entity_id)
-
                 # Check if the invoice already exists
-                existing_invoice = self.search([('chargebee_id', '=', invoice.id)], limit=1)
+                existing_invoice = self.env["account.move"].sudo().search([('chargebee_id', '=', invoice.id), ('company_id', '=', invoice_company.id)], limit=1)
                 if existing_invoice and existing_invoice.state == 'posted':
                     _logger.info(f"Skipping reconciled invoice: {existing_invoice.name}")
                     continue
@@ -290,7 +315,7 @@ class AccountMove(models.Model):
                 line_items = []
                 for item in getattr(invoice, 'line_items', []):
                     # Check if the product exists
-                    product = self.env['product.product'].search([('default_code', '=', item.id)], limit=1)
+                    product = self.env['product.product'].search([('default_code', '=', item.id), ('company_id', '=', invoice_company.id)], limit=1)
                     if not product:
                         # Create product if it doesn't exist
                         product = self.env['product.product'].sudo().create({
@@ -298,7 +323,9 @@ class AccountMove(models.Model):
                             'default_code': item.id,
                             'list_price': item.unit_amount / 100,  # Default price from Chargebee
                             'type': 'service',  # Or 'consu'/'product' based on your needs
-                            'company_id': invoice_company.id
+                            'company_id': invoice_company.id,
+                            'taxes_id': [(6, 0, [])],
+                            'supplier_taxes_id': [(6, 0, [])],
                         })
                         _logger.info(f"Created product {product.name} with Chargebee ID {item.id}.")
 
@@ -322,7 +349,7 @@ class AccountMove(models.Model):
                 )
                 if not invoice_journal:
                     raise UserError(
-                        _("No Sales journal found for company '%s'. Create one with default income account.") % invoice_company.name)
+                        _("No Sales journal found for company '%s', sync companies first and Create one with default income account.") % invoice_company.name)
 
                 if not invoice_journal.default_account_id:
                     raise UserError(
@@ -335,22 +362,19 @@ class AccountMove(models.Model):
                     'partner_id': self._get_or_create_partner(invoice).id,
                     'chargebee_id': invoice.id,
                     'invoice_line_ids': line_items,
+                    'fiscal_position_id': False,
                     'company_id': invoice_company.id,
                     'journal_id': invoice_journal.id,
                 }
                 # Create or update invoice
                 if existing_invoice:
-                    print("invoice is existing...")
                     try:
                         existing_invoice.write(vals)
                     except Exception as e:
                         _logger.warning(f"Could not update reconciled invoice {existing_invoice.name}: {e}")
                 else:
-                    print("invoice doesnt exist")
                     odoo_invoice = self.sudo().create(vals)
-                    print("new created invoice : ", odoo_invoice)
                     super(AccountMove, odoo_invoice).action_post()
-                    print("invoice is posting...")
                 self.env.cr.commit()
                 total_records += 1
 
@@ -388,7 +412,6 @@ class AccountMove(models.Model):
         """Register payments for a synced Chargebee invoice."""
         PaymentRegister = self.env['account.payment.register']
         chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
-        print("in payment : ", odoo_invoice)
 
         # fetching invoice payment journal selected by user on CB configuration
         invoice_payment_journal_line = chargebee_config.journal_config_ids.filtered(
@@ -400,7 +423,6 @@ class AccountMove(models.Model):
             else self.env['account.journal'].sudo().search(
                 [('type', '=', 'bank'), ('company_id', '=', odoo_invoice.company_id.id)], limit=1)
         )
-        print("350")
         for payment_data in linked_payments:
             payment_date = self.convert_timestamp_to_datetime(payment_data.txn_date)  # Convert timestamp to date
             payment_amount = payment_data.applied_amount / 100.0  # Convert cents to base currency
@@ -416,14 +438,12 @@ class AccountMove(models.Model):
                 'communication': odoo_invoice.name,
                 # 'invoice_ids': [(6, 0, [odoo_invoice.id])],  # Link the invoice
             }
-            print("Payment vals : ", payment_vals)
             try:
                 # Register the payment with proper context
                 payment_register = self.env['account.payment.register'].with_context(
                     active_model='account.move',
                     active_ids=odoo_invoice.id
-                ).create(payment_vals)
-                print("Payment register : ", payment_register)
+                ).sudo().create(payment_vals)
                 # Create and post the payment
                 payment_register.action_create_payments()
 
@@ -443,7 +463,7 @@ class AccountMove(models.Model):
         try:
             start_time = datetime.now()
             total_records = 0
-            subscriptions = chargebee.Subscription.list()
+            subscriptions = chargebee.Subscription.list({"limit": 100})
 
             for sub_data in subscriptions:
                 subscription = sub_data.subscription
@@ -456,99 +476,91 @@ class AccountMove(models.Model):
                 # Fetch customer details for partner creation
                 customer = chargebee.Customer.retrieve(subscription.customer_id)
 
-                invoice_company = self.env['res.company'].get_or_create_company_from_chargebee(
+                subs_company = self.env['res.company'].get_or_create_company_from_chargebee(
                     subscription.business_entity_id)
 
                 # Check if the invoice already exists (assuming a 'chargebee_subscription_id' field on account.move)
-                existing_invoice = self.env["account.move"].with_company(invoice_company.id).search([('chargebee_id', '=', subscription.id)], limit=1)
-                print("Existing invoice : ",existing_invoice)
-                if existing_invoice or existing_invoice.state == 'posted':
+                existing_invoice = self.env["account.move"].sudo().search([('chargebee_id', '=', subscription.id), ('company_id', '=', subs_company.id)], limit=1)
+                if existing_invoice and existing_invoice.state == 'posted':
                     _logger.info(f"Skipping posted subscription invoice: {existing_invoice.name}")
                     continue
 
                 quotes = chargebee.Quote.list({"subscription_id[is]": subscription.id})
-                quote = quotes[0]
-                total_cycles = self.fetch_total_cycles_of_the_subscription(quote)
+                # quote = quotes[0]
+                for quote in quotes:
+                    total_cycles = self.fetch_total_cycles_of_the_subscription(quote)
+                    # Prepare line items and create products if needed
+                    line_items = []
+                    for item in getattr(subscription, 'subscription_items', []):
+                        # Check if the product exists
+                        product = self.env['product.product'].search([('default_code', '=', item.item_price_id), ('company_id', '=', subs_company.id)], limit=1)
+                        if not product:
+                            # Create product if it doesn't exist
+                            product = self.env['product.product'].sudo().create({
+                                'name': item.item_price_id or "Chargebee Subscription Product",
+                                'default_code': item.item_price_id,
+                                'list_price': item.unit_price / 100,  # Assuming smallest currency unit (e.g., paise/cents)
+                                'type': 'service',  # Or 'consu'/'product' based on your needs
+                                'company_id': subs_company.id,
+                                'taxes_id': [(6, 0, [])],
+                            })
+                            _logger.info(
+                                f"Created product {product.name} with Chargebee Item Price ID {item.item_price_id}.")
 
-                # Prepare line items and create products if needed
-                line_items = []
-                for item in getattr(subscription, 'subscription_items', []):
-                    # Check if the product exists
-                    product = self.env['product.product'].search([('default_code', '=', item.item_price_id)], limit=1)
-                    if not product:
-                        # Create product if it doesn't exist
-                        product = self.env['product.product'].sudo().create({
-                            'name': item.item_price_id or "Chargebee Subscription Product",
-                            'default_code': item.item_price_id,
-                            'list_price': item.unit_price / 100,  # Assuming smallest currency unit (e.g., paise/cents)
-                            'type': 'service',  # Or 'consu'/'product' based on your needs
-                            'company_id': invoice_company.id
-                        })
-                        _logger.info(
-                            f"Created product {product.name} with Chargebee Item Price ID {item.item_price_id}.")
+                        # Prepare the line item
+                        line_items.append((0, 0, {
+                            'name': item.item_price_id or "Chargebee Subscription Item",
+                            'quantity': item.quantity * total_cycles,
+                            'price_unit': item.unit_price / 100,  # Convert smallest unit to currency
+                            'product_id': product.id,
+                            'deferred_start_date': self.convert_timestamp_to_date_for_deffered(quote.quoted_ramp.line_items[0].start_date),
+                            'deferred_end_date': self.convert_timestamp_to_date_for_deffered(quote.quoted_ramp.line_items[0].end_date),
+                        }))
 
-                    # Prepare the line item
-                    line_items.append((0, 0, {
-                        'name': item.item_price_id or "Chargebee Subscription Item",
-                        'quantity': item.quantity * total_cycles,
-                        'price_unit': item.unit_price / 100,  # Convert smallest unit to currency
-                        'product_id': product.id,
-                        'deferred_start_date': self.convert_timestamp_to_datetime(quote.quoted_ramp.line_items[0].start_date),
-                        'deferred_end_date': self.convert_timestamp_to_datetime(quote.quoted_ramp.line_items[0].end_date),
-                    }))
+                    invoice_journal_line = chargebee_config.journal_config_ids.filtered(
+                        lambda r: r.company_id.id == subs_company.id
+                    )[:1]
+                    invoice_journal = (
+                        invoice_journal_line.invoice_journal_id
+                        if invoice_journal_line.invoice_journal_id
+                        else self.env['account.journal'].sudo().search(
+                            [('type', '=', 'sale'), ('company_id', '=', subs_company.id)], limit=1)
+                    )
 
-                # Calculate Total subscription Price
+                    if not invoice_journal:
+                        raise UserError(
+                            _("No Sales journal found for company '%s' sync companies first and Create one Sales journal with default income account.") % subs_company.name)
 
+                    if not invoice_journal.default_account_id:
+                        raise UserError(
+                            _("No Default Account set for journal '%s'. Set default account for this journal") % invoice_journal.name)
 
-                invoice_journal_line = chargebee_config.journal_config_ids.filtered(
-                    lambda r: r.company_id.id == invoice_company.id
-                )[:1]
-                invoice_journal = (
-                    invoice_journal_line.invoice_journal_id
-                    if invoice_journal_line.invoice_journal_id
-                    else self.env['account.journal'].sudo().search(
-                        [('type', '=', 'sale'), ('company_id', '=', invoice_company.id)], limit=1)
-                )
-
-                print("invoice journal : ", invoice_journal, invoice_journal.sudo().name)
-                if not invoice_journal:
-                    raise UserError(
-                        _("No Sales journal found for company '%s'. Create one with default income account.") % invoice_company.name)
-
-                if not invoice_journal.default_account_id:
-                    raise UserError(
-                        _("No Default Account set for journal '%s'. Set default account for this journal") % invoice_journal.name)
-
-                # Prepare invoice values
-                vals = {
-                    'move_type': 'out_invoice',
-                    'invoice_date': self.convert_timestamp_to_datetime(subscription.started_at),
-                    'partner_id': self._get_or_create_partner(subscription).id,
-                    'chargebee_id': subscription.id,
-                    'invoice_line_ids': line_items,
-                    'company_id': invoice_company.id,
-                    'journal_id': invoice_journal.id,
-                }
-                print("invoice vals : ", vals)
-                # Create or update invoice
-                if existing_invoice:
-                    print("invoice is existing...")
-                    try:
-                        existing_invoice.write(vals)
-                    except Exception as e:
-                        _logger.warning(f"Could not update posted subscription invoice {existing_invoice.name}: {e}")
-                else:
-                    print("invoice doesnt exist")
-                    odoo_invoice = self.sudo().create(vals)
-                    print("new created invoice : ", odoo_invoice)
-                    super(AccountMove, odoo_invoice).action_post()
-                    print("invoice is posting...")
-                self.env.cr.commit()
-                total_records += 1
+                    # Prepare invoice values
+                    vals = {
+                        'move_type': 'out_invoice',
+                        'invoice_date': self.convert_timestamp_to_datetime(subscription.started_at),
+                        'partner_id': self.create_partner_for_subscription(subscription).id,
+                        'chargebee_id': subscription.id,
+                        'invoice_line_ids': line_items,
+                        'fiscal_position_id': False,
+                        'company_id': subs_company.id,
+                        'journal_id': invoice_journal.id,
+                    }
+                    # Create or update invoice
+                    if existing_invoice:
+                        try:
+                            existing_invoice.write(vals)
+                        except Exception as e:
+                            _logger.warning(f"Could not update posted subscription invoice {existing_invoice.name}: {e}")
+                    else:
+                        odoo_invoice = self.sudo().create(vals)
+                        super(AccountMove, odoo_invoice).action_post()
+                    self.env.cr.commit()
+                    total_records += 1
 
             # Log successful data processing
             self.env['cr.data.processing.log'].sudo()._log_data_processing(
-                table_name='Account Invoice',
+                table_name='Subscription',
                 record_count=total_records,
                 status='success',
                 timespan=str(datetime.now() - start_time),
@@ -561,7 +573,7 @@ class AccountMove(models.Model):
             _logger.error(f"Error syncing subscriptions: {e}")
             # Log the failure of data processing
             self.env['cr.data.processing.log'].sudo()._log_data_processing(
-                table_name='Account Invoice',
+                table_name='Subscription',
                 record_count=total_records,
                 status='failure',
                 timespan=str(datetime.now() - start_time),
@@ -571,8 +583,6 @@ class AccountMove(models.Model):
                 context='subscriptions',  # Specify context for this page
             )
             raise UserError(_("An error occurred while syncing subscriptions. Please check the logs for details."))
-
-        print("Syncing Subscription to invoice")
 
     def _get_or_create_partner(self, invoice):
         """Fetch or create a partner based on Chargebee invoice data."""
@@ -587,10 +597,26 @@ class AccountMove(models.Model):
                 'street': getattr(billing_address, 'street', ''),
                 'city': getattr(billing_address, 'city', ''),
                 'zip': getattr(billing_address, 'zip', ''),
-                'country_id': self.env['res.country'].search([('name', '=', getattr(billing_address, 'country', ''))],
+                'country_id': self.env['res.country'].sudo().search([('name', '=', getattr(billing_address, 'country', ''))],
                                                              limit=1).id,
                 'company_id': self.env['res.company'].get_or_create_company_from_chargebee(
                     invoice.business_entity_id).id
             })
-            print("partner : ", partner)
+        return partner
+
+    def create_partner_for_subscription(self, invoice):
+        """Fetch or create a partner based on Chargebee invoice data."""
+        billing_address = getattr(invoice, 'billing_address', None)
+        full_name = f"Subscription Partner"
+        partner = self.env['res.partner'].sudo().create({
+            'name': full_name,
+            'phone': getattr(billing_address, 'phone', ''),
+            'street': getattr(billing_address, 'street', ''),
+            'city': getattr(billing_address, 'city', ''),
+            'zip': getattr(billing_address, 'zip', ''),
+            'country_id': self.env['res.country'].sudo().search([('name', '=', getattr(billing_address, 'country', ''))],
+                                                         limit=1).id,
+            'company_id': self.env['res.company'].get_or_create_company_from_chargebee(
+                invoice.business_entity_id).id
+        })
         return partner

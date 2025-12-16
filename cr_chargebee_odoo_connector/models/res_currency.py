@@ -27,7 +27,7 @@ class ResCurrency(models.Model):
             chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
 
             # Fetch currencies from Chargebee
-            currencies_response = chargebee.Currency.list()
+            currencies_response = chargebee.Currency.list({'limit': 100})
             start_time = datetime.now()
             total_records = 0
             for currency_data in currencies_response:
@@ -52,18 +52,18 @@ class ResCurrency(models.Model):
                 total_records += 1
                 _logger.info(f"Created new currency: {cb_currency_code}")
 
-                # Log the successful data processing
-                self.env['cr.data.processing.log'].sudo()._log_data_processing(
-                    table_name='Currency',
-                    record_count=total_records,
-                    status='success',
-                    timespan=str(datetime.now() - start_time),  # Replace with actual timestamp
-                    initiated_at=start_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    cr_configuration_id=chargebee_config.id,  # Pass the Chargebee configuration ID here
-                    context='currencies',  # Specify context for this page
-                )
+            # Log the successful data processing
+            self.env['cr.data.processing.log'].sudo()._log_data_processing(
+                table_name='Currency',
+                record_count=total_records,
+                status='success',
+                timespan=str(datetime.now() - start_time),  # Replace with actual timestamp
+                initiated_at=start_time.strftime('%Y-%m-%d %H:%M:%S'),
+                cr_configuration_id=chargebee_config.id,  # Pass the Chargebee configuration ID here
+                context='currencies',  # Specify context for this page
+            )
 
-                return True
+            return True
 
         except Exception as e:
             _logger.error(f"Unexpected error while syncing currencies from Chargebee: {e}")
