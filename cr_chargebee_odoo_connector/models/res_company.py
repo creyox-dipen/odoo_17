@@ -10,7 +10,12 @@ from requests.auth import HTTPBasicAuth
 class ResCompany(models.Model):
     _inherit = "res.company"
 
-    chargebee_id = fields.Char(string="Chargebee ID", index=True)
+    chargebee_id = fields.Char(string="Chargebee ID", index=True, help="Business Entity ID from Chargebee")
+
+    _sql_constraints = [
+        ('unique_chargebee_id', 'unique(chargebee_id)', 'The same Chargebee ID cannot be used for multiple companies. Another company already has this Chargebee ID'),
+    ]
+
     def get_or_create_company_from_chargebee(self, cb_be_id=False):
         """
         If cb_be_id provided:
@@ -19,7 +24,7 @@ class ResCompany(models.Model):
             → Fetch ALL Business Entities from Chargebee and create companies.
         """
         # Load Chargebee config
-        config = self.env['chargebee.configuration'].search([], limit=1)
+        config = self.env["chargebee.configuration"].search([], limit=1)
         if not config or not config.api_key or not config.site_name:
             raise UserError(_("Chargebee configuration missing."))
 
@@ -27,15 +32,15 @@ class ResCompany(models.Model):
         site = config.site_name
 
         if cb_be_id:
-            existing = self.search([('chargebee_id', '=', cb_be_id)], limit=1)
+            existing = self.search([("chargebee_id", "=", cb_be_id)], limit=1)
             if existing:
                 return existing
             url = f"https://{site}.chargebee.com/api/v2/business_entities/{cb_be_id}"
             response = requests.get(url, auth=HTTPBasicAuth(api_key, ""))
             if response.status_code != 200:
-                raise UserError(_(
-                    f"Failed to retrieve Business Entity {cb_be_id}: {response.text}"
-                ))
+                raise UserError(
+                    _(f"Failed to retrieve Business Entity {cb_be_id}: {response.text}")
+                )
             be_data = response.json().get("business_entity")
             return self._create_company_from_be(be_data)
 
@@ -44,9 +49,7 @@ class ResCompany(models.Model):
         params = {"limit": 100}
         response = requests.get(url, params=params, auth=HTTPBasicAuth(api_key, ""))
         if response.status_code != 200:
-            raise UserError(_(
-                f"Failed to retrieve Business Entities: {response.text}"
-            ))
+            raise UserError(_(f"Failed to retrieve Business Entities: {response.text}"))
         companies = []
         be_list = response.json().get("list", [])
         for be_wrapper in be_list:
@@ -55,7 +58,7 @@ class ResCompany(models.Model):
                 continue
 
             cb_id = be.get("id")
-            existing = self.search([('chargebee_id', '=', cb_id)], limit=1)
+            existing = self.search([("chargebee_id", "=", cb_id)], limit=1)
             if existing:
                 companies.append(existing)
             else:
@@ -66,21 +69,30 @@ class ResCompany(models.Model):
     def _create_company_from_be(self, be_data):
         """Internal method to create Odoo company from Chargebee BE object."""
         cb_id = be_data.get("id")
+
+        # Check if company with this entity ID already exists
+        existing_company = self.search([("chargebee_id", "=", cb_id)], limit=1)
+        if existing_company:
+            return existing_company
+
         be_name = be_data.get("name") or f"Chargebee - {cb_id}"
         be_currency = be_data.get("currency_code") or "USD"
-        currency = self.env['res.currency'].search(
-            [('name', '=', be_currency), ('active', 'in', [True, False])],
-            limit=1
+        currency = self.env["res.currency"].search(
+            [("name", "=", be_currency), ("active", "in", [True, False])], limit=1
         )
         if not currency:
-            currency = self.env['res.currency'].create({
-                'name': be_currency,
-                'symbol': be_currency,
-                'active': True,
-            })
+            currency = self.env["res.currency"].create(
+                {
+                    "name": be_currency,
+                    "symbol": be_currency,
+                    "active": True,
+                }
+            )
 
-        return self.create({
-            'name': be_name,
-            'currency_id': currency.id,
-            'chargebee_id': cb_id,
-        })
+        return self.create(
+            {
+                "name": be_name,
+                "currency_id": currency.id,
+                "chargebee_id": cb_id,
+            }
+        )

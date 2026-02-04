@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<odoo>
+    <record id="view_company_form_inherit_chargebee" model="ir.ui.view">
+        <field name="name">res.company.form.inherit.chargebee</field>
+        <field name="model">res.company</field>
+        <field name="inherit_id" ref="base.view_company_form"/>
+        <field name="arch" type="xml">
+            <!-- Insert chargebee_id after company_registry -->
+            <xpath expr="//field[@name='company_registry']" position="after">
+                <field name="chargebee_id"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

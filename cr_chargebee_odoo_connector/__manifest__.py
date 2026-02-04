@@ -117,6 +117,7 @@
     "data": [
         "views/chargebee_config_views.xml",
         "views/res_partner_views.xml",
+        "views/res_company.xml",
         "views/item_family_views.xml",
         # "views/chargebee_subscription_view.xml",
         "views/product_template_views.xml",

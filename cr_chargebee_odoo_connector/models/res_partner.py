@@ -7,10 +7,13 @@ from datetime import datetime
 
 _logger = logging.getLogger(__name__)
 
-class ResPartner(models.Model):
-    _inherit = 'res.partner'
 
-    chargebee_customer_id = fields.Char(string="Chargebee Customer ID", help="Customer ID in Chargebee")
+class ResPartner(models.Model):
+    _inherit = "res.partner"
+
+    chargebee_customer_id = fields.Char(
+        string="Chargebee Customer ID", help="Customer ID in Chargebee"
+    )
 
     def create(self, vals):
         return super(ResPartner, self).create(vals)
@@ -18,8 +21,12 @@ class ResPartner(models.Model):
     def export_to_chargebee(self):
         """Export customers to Chargebee."""
         # Retrieve Chargebee configuration
-        chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
-        if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
+        chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
+        if (
+            not chargebee_config
+            or not chargebee_config.api_key
+            or not chargebee_config.site_name
+        ):
             raise ValueError(_("Chargebee configuration is incomplete."))
 
         # Configure Chargebee
@@ -39,13 +46,15 @@ class ResPartner(models.Model):
 
             try:
                 # Create or update customer in Chargebee
-                chargebee.Customer.create({
-                    "id": f"odoo_{partner.id}",  # Unique ID
-                    "first_name": partner.name,
-                    "email": partner.email,
-                    "company": partner.company_name or partner.name,
-                    "phone": partner.phone,
-                })
+                chargebee.Customer.create(
+                    {
+                        "id": f"odoo_{partner.id}",  # Unique ID
+                        "first_name": partner.name,
+                        "email": partner.email,
+                        "company": partner.company_name or partner.name,
+                        "phone": partner.phone,
+                    }
+                )
                 self.env.cr.commit()
                 successful_exports.append(partner.name)
                 total_records += 1
@@ -56,18 +65,18 @@ class ResPartner(models.Model):
                 )
                 # Log the export process
         try:
-                self.env['cr.data.processing.log'].sudo()._log_data_processing(
-                    table_name='Customers',
-                    record_count=total_records,
-                    status='success' if total_records > 0 else 'failure',
-                    timespan=str(datetime.now() - start_time),
-                    initiated_at=start_time.strftime('%Y-%m-%d %H:%M:%S'),
-                    cr_configuration_id=chargebee_config.id,
-                    context='customers',
-                    error_message="\n".join(failed_exports) if failed_exports else None,
-                )
+            self.env["cr.data.processing.log"].sudo()._log_data_processing(
+                table_name="Customers",
+                record_count=total_records,
+                status="success" if total_records > 0 else "failure",
+                timespan=str(datetime.now() - start_time),
+                initiated_at=start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                cr_configuration_id=chargebee_config.id,
+                context="customers",
+                error_message="\n".join(failed_exports) if failed_exports else None,
+            )
         except Exception as log_error:
-                _logger.error(f"Failed to log Chargebee export: {log_error}")
+            _logger.error(f"Failed to log Chargebee export: {log_error}")
 
         # Prepare notification messages
         title = _("Chargebee Export Results")
@@ -96,8 +105,12 @@ class ResPartner(models.Model):
 
     def sync_chargebee_customers(self):
         """Synchronize customers from Chargebee to Odoo."""
-        chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
-        if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
+        chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
+        if (
+            not chargebee_config
+            or not chargebee_config.api_key
+            or not chargebee_config.site_name
+        ):
             raise ValueError(_("Chargebee configuration is incomplete."))
 
         # Configure Chargebee
@@ -112,43 +125,53 @@ class ResPartner(models.Model):
         customers = chargebee.Customer.list({"limit": 100})  # Adjust limit as needed
         for customer_data in customers:
             chargebee_customer = customer_data.customer
-            customer_company = self.env['res.company'].get_or_create_company_from_chargebee(chargebee_customer.business_entity_id)
+            customer_company = self.env[
+                "res.company"
+            ].get_or_create_company_from_chargebee(
+                chargebee_customer.business_entity_id
+            )
             try:
                 partner_vals = {
-                    'name': f"{chargebee_customer.first_name} {getattr(chargebee_customer, 'last_name', '')}".strip(),
-                    'email': chargebee_customer.email,
-                    'phone': getattr(chargebee_customer, 'phone', None),
-                    'company_name': getattr(chargebee_customer, 'company', None),
-                    'id': chargebee_customer.id,
-                    'company_id': customer_company.id,
+                    "name": f"{chargebee_customer.first_name} {getattr(chargebee_customer, 'last_name', '')}".strip(),
+                    "email": chargebee_customer.email,
+                    "phone": getattr(chargebee_customer, "phone", None),
+                    "company_name": getattr(chargebee_customer, "company", None),
+                    "id": chargebee_customer.id,
+                    "company_id": customer_company.id,
                 }
 
                 # Update existing or create new
-                existing_partner = self.env['res.partner'].search([('email', '=', chargebee_customer.email)], limit=1)
+                existing_partner = self.env["res.partner"].search(
+                    [("email", "=", chargebee_customer.email)], limit=1
+                )
                 if existing_partner:
                     existing_partner.write(partner_vals)
                 else:
-                    new_partner = self.env['res.partner'].sudo().create(partner_vals)
-                    new_customers.append(new_partner.name)  # Add the newly created partner's name
+                    new_partner = self.env["res.partner"].sudo().create(partner_vals)
+                    new_customers.append(
+                        new_partner.name
+                    )  # Add the newly created partner's name
                 total_synced += 1
             except Exception as e:
-                _logger.error(f"Error syncing Chargebee customer {chargebee_customer.id}: {str(e)}")
+                _logger.error(
+                    f"Error syncing Chargebee customer {chargebee_customer.id}: {str(e)}"
+                )
                 errors.append(f"{chargebee_customer.email}: {str(e)}")
 
                 # Log the sync process
         try:
-                    self.env['cr.data.processing.log'].sudo()._log_data_processing(
-                        table_name='Customers',
-                        record_count=total_synced,
-                        status='success' if total_synced > 0 else 'failure',
-                        timespan=str(datetime.now() - start_time),
-                        initiated_at=start_time.strftime('%Y-%m-%d %H:%M:%S'),
-                        cr_configuration_id=chargebee_config.id,
-                        context='customers',
-                        error_message="\n".join(errors) if errors else None,
-                    )
+            self.env["cr.data.processing.log"].sudo()._log_data_processing(
+                table_name="Customers",
+                record_count=total_synced,
+                status="success" if total_synced > 0 else "failure",
+                timespan=str(datetime.now() - start_time),
+                initiated_at=start_time.strftime("%Y-%m-%d %H:%M:%S"),
+                cr_configuration_id=chargebee_config.id,
+                context="customers",
+                error_message="\n".join(errors) if errors else None,
+            )
         except Exception as log_error:
-                    _logger.error(f"Failed to log Chargebee customer sync: {log_error}")
+            _logger.error(f"Failed to log Chargebee customer sync: {log_error}")
 
         # Prepare notification message
         message = _(

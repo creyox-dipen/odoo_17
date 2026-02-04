@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Part of Creyox Technologies.
-
 from odoo import models, fields
 
 class SaleSubscriptionPlan(models.Model):
@@ -13,8 +12,18 @@ class SaleSubscriptionPlan(models.Model):
 class SaleOrder(models.Model):
     _inherit = "sale.order"
 
-    def _process_auto_invoice(self, invoice):
-        print(self.plan_id.is_draft)
+    def _handle_automatic_invoices(self, invoice, auto_commit):
+        """
+        Skip automatic payment & payment_exception
+        when subscription plan is configured for draft invoices.
+        """
+        self.ensure_one()
         if self.plan_id.is_draft:
-            return
-        return super()._process_auto_invoice(invoice)
+            # Explicitly ensure subscription is NOT marked as failed
+            self.with_context(mail_notrack=True).write({
+                'payment_exception': False
+            })
+            # Just return the draft invoice, no payment logic
+            return invoice
+
+        return super()._handle_automatic_invoices(invoice, auto_commit)

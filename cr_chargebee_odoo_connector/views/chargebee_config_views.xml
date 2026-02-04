@@ -41,7 +41,6 @@
                     <!--                        </group>-->
                     <notebook>
                         <page string="Customers">
-
                             <div style="border-top: 2px solid #ccc; margin-top: 30px; padding-top: 10px;">
                                 <h3 style="color: #714b67;">Customers</h3>
                             </div>
@@ -193,6 +192,7 @@
                         <page string="Journal Configuration">
                             <field name="journal_config_ids">
                                 <tree editable="bottom">
+                                    <field name="item_family_id"/>
                                     <field name="company_id"/>
                                     <field name="invoice_journal_id"/>
                                     <field name="invoice_payment_journal_id"/>
@@ -200,6 +200,99 @@
                                     <field name="credit_note_payment_journal_id"/>
                                 </tree>
                             </field>
+                        </page>
+
+                        <!--  webhook configuration  -->
+                        <page string="Webhook Configuration" name="webhook_config">
+                            <group>
+                                <group string="Webhook Settings">
+                                    <field name="webhook_enabled"/>
+                                    <label for="webhook_url"/>
+                                    <div class="o_row">
+                                        <field name="webhook_url" widget="CopyClipboardChar"
+                                               placeholder="Click 'Refresh URL' to generate"/>
+                                        <button name="action_refresh_webhook_url"
+                                                type="object"
+                                                string="Refresh URL"
+                                                class="btn-secondary"
+                                                icon="fa-refresh"
+                                                title="Update webhook URL based on current system settings"/>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <group>
+                                <group string="Setup Instructions">
+                                    <div class="alert alert-info" role="alert" style="width: 700px">
+                                        <h4 class="alert-heading">How to Configure Chargebee Webhooks:</h4>
+                                        <ol>
+                                            <li>
+                                                <strong>Copy the Webhook URL above</strong>
+                                            </li>
+                                            <li>
+                                                <strong>Go to Chargebee Dashboard:</strong>
+                                                <br/>Settings → Webhooks → Add Webhook
+                                            </li>
+                                            <li>
+                                                <strong>Paste the Webhook URL</strong> from above
+                                            </li>
+                                            <li>
+                                                <strong>Select Events to Subscribe:</strong>
+                                                <ul>
+                                                    <li>✓ invoice_generated</li>
+                                                    <li>✓ payment_succeeded</li>
+                                                    <li>✓ invoice_updated</li>
+                                                </ul>
+                                            </li>
+                                            <li>
+                                                <strong>Enable webhooks</strong> by checking "Enable Webhooks" in odoo
+                                            </li>
+                                            <li>
+                                                <strong>Save</strong> this configuration
+                                            </li>
+                                        </ol>
+                                        <p class="mb-0">
+                                            <i class="fa fa-info-circle"/>
+                                            <strong> Note:</strong> Webhooks provide real-time synchronization of subscription invoices
+                                            from Chargebee to Odoo automatically.
+                                        </p>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <group>
+                                <group string="Supported Webhook Events">
+                                    <div class="alert alert-success" role="alert" style="width: 700px">
+                                        <h5>The following events are automatically processed:</h5>
+                                        <table class="table table-sm">
+                                            <thead>
+                                                <tr>
+                                                    <th>Event</th>
+                                                    <th>Description</th>
+                                                    <th>Action in Odoo</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                <tr>
+                                                    <td><code>invoice_generated</code></td>
+                                                    <td>New subscription invoice created in Chargebee</td>
+                                                    <td>Creates new invoice in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>payment_succeeded</code></td>
+                                                    <td>Payment successfully processed for invoice</td>
+                                                    <td>Registers payment for invoice</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>invoice_updated</code></td>
+                                                    <td>Invoice details updated in Chargebee</td>
+                                                    <td>Updates existing invoice in Odoo</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </group>
+                            </group>
                         </page>
                     </notebook>
                 </sheet>
