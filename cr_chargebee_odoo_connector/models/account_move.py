@@ -156,13 +156,38 @@ class AccountMove(models.Model):
                         )  # Convert cents to currency
                         _logger.info("payment data : %s", payment_data)
 
-                        # Get product IDs from invoice lines
-                        product_ids = invoice.invoice_line_ids.mapped('product_id').ids
-                        invoice_payment_journal = self._get_payment_journal(
-                            chargebee_config,
-                            invoice.company_id,
-                            product_ids
-                        )
+                        # Get invoice data to extract line items
+                        invoice_data = None
+                        if invoice.chargebee_id:
+                            try:
+                                chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+                                invoice_result = chargebee.Invoice.retrieve(invoice.chargebee_id)
+                                invoice_data = invoice_result.invoice
+                            except Exception as e:
+                                _logger.warning(f"Could not fetch invoice from Chargebee: {e}")
+
+                        # Get payment journal based on family from Chargebee API
+                        if invoice_data and hasattr(invoice_data, 'line_items'):
+                            line_items_list = [
+                                {
+                                    'entity_id': item.entity_id if hasattr(item, 'entity_id') else item.id,
+                                    'entity_type': item.entity_type if hasattr(item, 'entity_type') else '',
+                                    'id': item.id
+                                }
+                                for item in invoice_data.line_items
+                            ]
+                            invoice_payment_journal = self._get_payment_journal_from_chargebee_family(
+                                chargebee_config,
+                                invoice.company_id,
+                                line_items_list
+                            )
+                        else:
+                            # Fallback
+                            invoice_payment_journal = self._get_payment_journal_from_chargebee_family(
+                                chargebee_config,
+                                invoice.company_id,
+                                []
+                            )
 
                         # Create payment in Odoo
                         payment_vals = {
@@ -267,16 +292,20 @@ class AccountMove(models.Model):
                     for line in credit_note.line_items
                 ]
 
-                # Collect product IDs from credit note lines
-                product_ids = []
-                for line in credit_note.line_items:
-                    product = self.env["product.product"].search(
-                        [("default_code", "=", line.id)], limit=1
-                    )
-                    if product:
-                        product_ids.append(product.id)
-
-                cn_journal = self._get_credit_note_journal(chargebee_config, cn_company, product_ids)
+                # Get journal based on family from Chargebee API
+                chargebee_line_items = [
+                    {
+                        'entity_id': item.entity_id if hasattr(item, 'entity_id') else item.id,
+                        'entity_type': item.entity_type if hasattr(item, 'entity_type') else '',
+                        'id': item.id
+                    }
+                    for item in credit_note.line_items
+                ]
+                cn_journal = self._get_credit_note_journal_from_chargebee_family(
+                    chargebee_config,
+                    cn_company,
+                    chargebee_line_items
+                )
 
                 # Create credit note
                 new_cn = (
@@ -353,9 +382,43 @@ class AccountMove(models.Model):
                     ]
 
                     chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
-                    # Get product IDs from invoice lines
-                    product_ids = invoice.invoice_line_ids.mapped('product_id').ids
-                    cn_journal = self._get_credit_note_journal(chargebee_config, invoice.company_id, product_ids)
+                    # Get credit notes related to this invoice
+                    try:
+                        chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+                        credit_notes = chargebee.CreditNote.list(
+                            {"reference_invoice_id[is]": invoice.chargebee_id}
+                        )
+
+                        # Get first credit note to determine family
+                        if credit_notes and len(credit_notes) > 0:
+                            credit_note = credit_notes[0].credit_note
+                            chargebee_line_items = [
+                                {
+                                    'entity_id': item.entity_id if hasattr(item, 'entity_id') else item.id,
+                                    'entity_type': item.entity_type if hasattr(item, 'entity_type') else '',
+                                    'id': item.id
+                                }
+                                for item in getattr(credit_note, 'line_items', [])
+                            ]
+                            cn_journal = self._get_credit_note_journal_from_chargebee_family(
+                                chargebee_config,
+                                invoice.company_id,
+                                chargebee_line_items
+                            )
+                        else:
+                            # Fallback
+                            cn_journal = self._get_credit_note_journal_from_chargebee_family(
+                                chargebee_config,
+                                invoice.company_id,
+                                []
+                            )
+                    except Exception as e:
+                        _logger.warning(f"Could not fetch credit notes: {e}")
+                        cn_journal = self._get_credit_note_journal_from_chargebee_family(
+                            chargebee_config,
+                            invoice.company_id,
+                            []
+                        )
 
                     # Create credit note in Odoo
                     new_cn = self.env["account.move"].create(
@@ -446,7 +509,6 @@ class AccountMove(models.Model):
                     product = self.env["product.product"].search(
                         [
                             ("default_code", "=", item.id),
-                            ("company_id", "=", invoice_company.id),
                         ],
                         limit=1,
                     )
@@ -462,7 +524,7 @@ class AccountMove(models.Model):
                                     "list_price": item.unit_amount
                                                   / 100,  # Default price from Chargebee
                                     "type": "service",  # Or 'consu'/'product' based on your needs
-                                    "company_id": invoice_company.id,
+                                    # "company_id": invoice_company.id, keep it general
                                     "taxes_id": [(6, 0, [])],
                                     "supplier_taxes_id": [(6, 0, [])],
                                 }
@@ -471,6 +533,9 @@ class AccountMove(models.Model):
                         _logger.info(
                             f"Created product {product.name} with Chargebee ID {item.id}."
                         )
+
+                    date_from = getattr(item, 'date_from', False)
+                    date_to = getattr(item, 'date_to', False)
 
                     # Prepare the line item
                     line_items.append(
@@ -483,14 +548,29 @@ class AccountMove(models.Model):
                                 "price_unit": item.unit_amount
                                               / 100,  # Convert cents to currency
                                 "product_id": product.id,
+                                'deferred_start_date': self.convert_timestamp_to_date_for_deffered(
+                                    date_from) if date_from else False,
+                                'deferred_end_date': self.convert_timestamp_to_date_for_deffered(
+                                    date_to) if date_to else False,
                             },
                         )
                     )
 
-                # Collect product IDs from line items
-                product_ids = [line[2]['product_id'] for line in line_items if line[2].get('product_id')]
-                invoice_journal = self._get_invoice_journal(chargebee_config, invoice_company, product_ids)
-
+                # Get journal based on family from Chargebee API
+                chargebee_line_items = [
+                    {
+                        'entity_id': item.entity_id if hasattr(item, 'entity_id') else item.id,
+                        'entity_type': item.entity_type if hasattr(item, 'entity_type') else '',
+                        'id': item.id
+                    }
+                    for item in getattr(invoice, 'line_items', [])
+                ]
+                invoice_journal = self._get_invoice_journal_from_chargebee_family(
+                    chargebee_config,
+                    invoice_company,
+                    chargebee_line_items
+                )
+                _logger.info("👉👉👉 Invoice journal : %s %s", invoice_journal, invoice_journal.name)
                 if not invoice_journal:
                     raise UserError(
                         _(
@@ -517,6 +597,7 @@ class AccountMove(models.Model):
                     "fiscal_position_id": False,
                     "company_id": invoice_company.id,
                     "journal_id": invoice_journal.id,
+
                 }
                 # Create or update invoice
                 if existing_invoice and existing_invoice.state != "cancel":
@@ -588,13 +669,38 @@ class AccountMove(models.Model):
 
         chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
 
-        # Get product IDs from invoice lines
-        product_ids = odoo_invoice.invoice_line_ids.mapped('product_id').ids
-        invoice_payment_journal = self._get_payment_journal(
-            chargebee_config,
-            odoo_invoice.company_id,
-            product_ids
-        )
+        # Get invoice data to extract line items
+        invoice_data = None
+        if odoo_invoice.chargebee_id:
+            try:
+                chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+                invoice_result = chargebee.Invoice.retrieve(odoo_invoice.chargebee_id)
+                invoice_data = invoice_result.invoice
+            except Exception as e:
+                _logger.warning(f"Could not fetch invoice from Chargebee: {e}")
+
+        # Get payment journal based on family from Chargebee API
+        if invoice_data and hasattr(invoice_data, 'line_items'):
+            line_items_list = [
+                {
+                    'entity_id': item.entity_id if hasattr(item, 'entity_id') else item.id,
+                    'entity_type': item.entity_type if hasattr(item, 'entity_type') else '',
+                    'id': item.id
+                }
+                for item in invoice_data.line_items
+            ]
+            invoice_payment_journal = self._get_payment_journal_from_chargebee_family(
+                chargebee_config,
+                odoo_invoice.company_id,
+                line_items_list
+            )
+        else:
+            # Fallback to company-only
+            invoice_payment_journal = self._get_payment_journal_from_chargebee_family(
+                chargebee_config,
+                odoo_invoice.company_id,
+                []
+            )
 
         # Ensure we have a valid journal
         if not invoice_payment_journal:
@@ -783,9 +889,20 @@ class AccountMove(models.Model):
                             )
                         )
 
-                    # Collect product IDs from line items
-                    product_ids = [line[2]['product_id'] for line in line_items if line[2].get('product_id')]
-                    invoice_journal = self._get_invoice_journal(chargebee_config, subs_company, product_ids)
+                    # Get journal based on family from Chargebee API
+                    chargebee_line_items = [
+                        {
+                            'entity_id': item.item_price_id if hasattr(item, 'item_price_id') else item.id,
+                            'entity_type': 'plan_item_price',
+                            'id': item.id
+                        }
+                        for item in getattr(subscription, 'subscription_items', [])
+                    ]
+                    invoice_journal = self._get_invoice_journal_from_chargebee_family(
+                        chargebee_config,
+                        subs_company,
+                        chargebee_line_items
+                    )
 
                     if not invoice_journal:
                         raise UserError(
@@ -962,10 +1079,10 @@ class AccountMove(models.Model):
                 _logger.info(f"Invoice {existing_invoice.name} already posted, skipping update")
                 return existing_invoice
 
-            # **ADD THIS: Skip if invoice is being created right now in another transaction**
-            if existing_invoice and existing_invoice.state == 'draft':
-                _logger.info(f"Invoice {existing_invoice.name} already exists in draft, returning it")
-                return existing_invoice
+            # # **ADD THIS: Skip if invoice is being created right now in another transaction**
+            # if existing_invoice and existing_invoice.state == 'draft':
+            #     _logger.info(f"Invoice {existing_invoice.name} already exists in draft, returning it")
+            #     return existing_invoice
 
             # Prepare line items
             line_items = self._prepare_invoice_lines_from_webhook(
@@ -981,9 +1098,12 @@ class AccountMove(models.Model):
             # Get appropriate journal
             chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
 
-            # Collect product IDs from prepared line items
-            product_ids = [line[2]['product_id'] for line in line_items if line[2].get('product_id')]
-            invoice_journal = self._get_invoice_journal(chargebee_config, invoice_company, product_ids)
+            # Get journal based on family from Chargebee API
+            invoice_journal = self._get_invoice_journal_from_chargebee_family(
+                chargebee_config,
+                invoice_company,
+                invoice_data.get('line_items', [])
+            )
 
             _logger.info("➡️➡️ invoice journal : %s", invoice_journal)
 
@@ -1055,14 +1175,17 @@ class AccountMove(models.Model):
                 _logger.warning(f"Could not create product for item: {item.get('id')}")
                 continue
 
+            date_from = item["date_from"]
+            date_to = item["date_to"]
+            _logger.info("📅📅📅 start date : %s and  end date : %s", date_from, date_to)
             line_val = (0, 0, {
                 'name': item.get('description') or 'Chargebee Item',
                 'quantity': item.get('quantity', 1),
                 'price_unit': item.get('unit_amount', 0) / 100,  # Convert cents to currency
                 'product_id': product.id,
                 'tax_ids': [],  # Add tax logic if needed
-                'deferred_start_date': self.convert_timestamp_to_date_for_deffered(item['date_from']),
-                'deferred_end_date': self.convert_timestamp_to_date_for_deffered(item['date_to']),
+                'deferred_start_date': self.convert_timestamp_to_date_for_deffered(date_from) if date_from else False,
+                'deferred_end_date': self.convert_timestamp_to_date_for_deffered(date_to) if date_to else False,
             })
             prepared_lines.append(line_val)
 
@@ -1071,6 +1194,7 @@ class AccountMove(models.Model):
     def _get_or_create_product_from_webhook(self, item_data, company):
         """
         Get or create product from webhook item data.
+        FIXED: Handle item_price_id to item_id conversion.
 
         Args:
             item_data (dict): Line item data
@@ -1079,26 +1203,57 @@ class AccountMove(models.Model):
         Returns:
             product.product: Product record
         """
-        item_id = item_data.get('entity_id') or item_data.get('id')
+        entity_id = item_data.get('entity_id') or item_data.get('id')
+        entity_type = item_data.get('entity_type', '')
 
-        # Search for existing product
+        # Initialize item_id
+        item_id = None
+
+        # If entity is an item_price, fetch the parent item_id from Chargebee
+        if 'item_price' in entity_type or 'plan_item_price' in entity_type:
+            try:
+                # Configure Chargebee
+                chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
+                if chargebee_config and chargebee_config.api_key and chargebee_config.site_name:
+                    chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+
+                    # Fetch the item_price to get parent item_id
+                    item_price_result = chargebee.ItemPrice.retrieve(entity_id)
+                    item_price = item_price_result.item_price
+                    item_id = item_price.item_id  # This is the actual product/item ID
+                    _logger.info(f"Resolved item_price_id '{entity_id}' to item_id '{item_id}'")
+            except Exception as e:
+                _logger.warning(f"Could not fetch item_price {entity_id} from Chargebee: {e}")
+                # Fallback: try to parse the item_id from entity_id (format: item_id-currency-period)
+                if '-' in entity_id:
+                    item_id = entity_id.split('-')[0]
+                    _logger.info(f"Parsed item_id '{item_id}' from entity_id '{entity_id}'")
+        else:
+            # Entity is already an item_id
+            item_id = entity_id
+
+        if not item_id:
+            _logger.error(f"Could not determine item_id for entity {entity_id}")
+            return None
+
+        # Search for existing product using the item_id
         product = self.env['product.product'].search([
             ('default_code', '=', item_id),
-            ('company_id', '=', company.id)
+            # ('company_id', '=', company.id)
         ], limit=1)
 
         if not product:
             # Create new product
             product = self.env['product.product'].sudo().create({
                 'name': item_data.get('description') or f"Chargebee Item {item_id}",
-                'default_code': item_id,
+                'default_code': item_id,  # Store the item_id, not item_price_id
                 'list_price': item_data.get('unit_amount', 0) / 100,
                 'type': 'service',
-                'company_id': company.id,
+                'company_id': False,
                 'taxes_id': [(6, 0, [])],
                 'supplier_taxes_id': [(6, 0, [])],
             })
-            _logger.info(f"Created product {product.name} from webhook")
+            _logger.info(f"Created product {product.name} with item_id {item_id}")
 
         return product
 
@@ -1165,42 +1320,126 @@ class AccountMove(models.Model):
 
         return partner
 
-    def _get_invoice_journal(self, chargebee_config, company, product_ids=None):
+    def _get_item_family_from_chargebee(self, line_items):
         """
-        Get appropriate invoice journal based on company and product family.
+        Fetch item family from Chargebee API based on line items.
+        This doesn't rely on local products existing in Odoo.
+
+        Args:
+            line_items (list): Line items from webhook/invoice (list of dicts)
+
+        Returns:
+            chargebee.item.family or None: Odoo family record
+        """
+        if not line_items:
+            _logger.info("No line items provided for family lookup")
+            return None
+
+        # Get Chargebee config
+        chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
+        if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
+            _logger.warning("Chargebee configuration incomplete")
+            return None
+
+        # Configure Chargebee
+        chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+
+        # Get first line item to determine family
+        first_item = line_items[0] if isinstance(line_items, list) else line_items
+        entity_id = first_item.get('entity_id') or first_item.get('id')
+        entity_type = first_item.get('entity_type', '')
+
+        try:
+            item_id = None
+
+            # If entity is an item_price, resolve to item_id
+            if 'item_price' in entity_type or 'plan_item_price' in entity_type:
+                try:
+                    item_price_result = chargebee.ItemPrice.retrieve(entity_id)
+                    item_id = item_price_result.item_price.item_id
+                    _logger.info(f"✅ Resolved item_price_id '{entity_id}' to item_id '{item_id}'")
+                except Exception as e:
+                    _logger.warning(f"Could not fetch item_price {entity_id}: {e}")
+                    # Fallback: parse item_id from entity_id (format: item_id-currency-period)
+                    if '-' in str(entity_id):
+                        item_id = entity_id.split('-')[0]
+                        _logger.info(f"✅ Parsed item_id '{item_id}' from entity_id '{entity_id}'")
+            else:
+                # Entity is already an item_id
+                item_id = entity_id
+
+            if not item_id:
+                _logger.warning(f"Could not determine item_id from entity {entity_id}")
+                return None
+
+            # Fetch item from Chargebee to get family
+            item_result = chargebee.Item.retrieve(item_id)
+            item = item_result.item
+
+            if hasattr(item, 'item_family_id') and item.item_family_id:
+                family_id = item.item_family_id
+                _logger.info(f"✅ Found item_family_id '{family_id}' from Chargebee for item '{item_id}'")
+
+                # Fetch or find the family in Odoo
+                odoo_family = self.env['chargebee.item.family'].search([
+                    ('chargebee_id', '=', family_id)
+                ], limit=1)
+
+                if not odoo_family:
+                    # Create family if it doesn't exist
+                    try:
+                        family_result = chargebee.ItemFamily.retrieve(family_id)
+                        chargebee_family = family_result.item_family
+                        odoo_family = self.env['chargebee.item.family'].sudo().create({
+                            'name': chargebee_family.name,
+                            'chargebee_id': chargebee_family.id,
+                        })
+                        _logger.info(f"✅ Created item family '{odoo_family.name}' in Odoo")
+                    except Exception as e:
+                        _logger.warning(f"Could not create family {family_id}: {e}")
+                        return None
+
+                return odoo_family
+            else:
+                _logger.info(f"Item '{item_id}' has no family assigned in Chargebee")
+                return None
+
+        except Exception as e:
+            _logger.error(f"Error fetching item family from Chargebee: {e}", exc_info=True)
+            return None
+
+    def _get_invoice_journal_from_chargebee_family(self, chargebee_config, company, line_items):
+        """
+        Get invoice journal based on company and family fetched from Chargebee API.
 
         Args:
             chargebee_config (chargebee.configuration): Chargebee config
             company (res.company): Company record
-            product_ids (list): List of product IDs (optional)
+            line_items (list): Line items from webhook/invoice
 
         Returns:
             account.journal: Journal record
         """
-        _logger.info("❌❌ product_ids : %s", product_ids)
-        # Get item family from products if provided
-        item_family = None
-        if product_ids:
-            products = self.env['product.product'].sudo().browse(product_ids)
-            # Get the first product's family (all products in same invoice should have same family)
-            for product in products:
-                _logger.info("❌❌ product family id : %s", product.product_tmpl_id.item_family_id)
-                if product.product_tmpl_id.item_family_id:
-                    item_family = product.product_tmpl_id.item_family_id
-                    break
+        # Fetch family from Chargebee API
+        item_family = self._get_item_family_from_chargebee(line_items)
 
         # Find journal config matching both company and family (if family exists)
+        journal_config = None
         if item_family:
-            _logger.info("❌❌ Item Family found : %s", item_family)
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id and r.item_family_id.id == item_family.id
             )[:1]
-        else:
-            _logger.info("❌❌ Item Family not found : %s", item_family)
-            # Fallback to company-only match
+            if journal_config:
+                _logger.info(
+                    f"✅ Using family-specific journal config for company '{company.name}' and family '{item_family.name}'")
+
+        # Fallback to company-only match if no family match found
+        if not journal_config:
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id
             )[:1]
+            if journal_config:
+                _logger.info(f"ℹ️ Using company-only journal config for '{company.name}' (no family match)")
 
         invoice_journal = (
             journal_config.invoice_journal_id
@@ -1210,40 +1449,38 @@ class AccountMove(models.Model):
                 ('company_id', '=', company.id)
             ], limit=1)
         )
-        _logger.info("❌❌ Invoice journal : %s", invoice_journal)
+
+        if invoice_journal:
+            _logger.info(f"✅ Selected invoice journal: {invoice_journal.name}")
+        else:
+            _logger.warning(f"⚠️ No invoice journal found for company {company.name}")
 
         return invoice_journal
 
-    def _get_payment_journal(self, chargebee_config, company, product_ids=None):
+    def _get_payment_journal_from_chargebee_family(self, chargebee_config, company, line_items):
         """
-        Get appropriate payment journal based on company and product family.
+        Get payment journal based on company and family fetched from Chargebee API.
 
         Args:
             chargebee_config (chargebee.configuration): Chargebee config
             company (res.company): Company record
-            product_ids (list): List of product IDs (optional)
+            line_items (list): Line items from webhook/invoice
 
         Returns:
             account.journal: Payment journal record
         """
-        # Get item family from products if provided
-        _logger.info("❌❌ product_ids : %s", product_ids)
-        item_family = None
-        if product_ids:
-            products = self.env['product.product'].sudo().browse(product_ids)
-            for product in products:
-                if product.product_tmpl_id.item_family_id:
-                    item_family = product.product_tmpl_id.item_family_id
-                    break
+        # Fetch family from Chargebee API
+        item_family = self._get_item_family_from_chargebee(line_items)
 
         # Find journal config matching both company and family (if family exists)
+        journal_config = None
         if item_family:
-            _logger.info("❌❌ Item Family found : %s", item_family)
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id and r.item_family_id.id == item_family.id
             )[:1]
-        else:
-            # Fallback to company-only match
+
+        # Fallback to company-only match
+        if not journal_config:
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id
             )[:1]
@@ -1257,36 +1494,35 @@ class AccountMove(models.Model):
             ], limit=1)
         )
 
+        if payment_journal:
+            _logger.info(f"✅ Selected payment journal: {payment_journal.name}")
+
         return payment_journal
 
-    def _get_credit_note_journal(self, chargebee_config, company, product_ids=None):
+    def _get_credit_note_journal_from_chargebee_family(self, chargebee_config, company, line_items):
         """
-        Get appropriate credit note journal based on company and product family.
+        Get credit note journal based on company and family fetched from Chargebee API.
 
         Args:
             chargebee_config (chargebee.configuration): Chargebee config
             company (res.company): Company record
-            product_ids (list): List of product IDs (optional)
+            line_items (list): Line items from webhook/invoice
 
         Returns:
             account.journal: Credit note journal record
         """
-        # Get item family from products if provided
-        item_family = None
-        if product_ids:
-            products = self.env['product.product'].sudo().browse(product_ids)
-            for product in products:
-                if product.product_tmpl_id.item_family_id:
-                    item_family = product.product_tmpl_id.item_family_id
-                    break
+        # Fetch family from Chargebee API
+        item_family = self._get_item_family_from_chargebee(line_items)
 
         # Find journal config matching both company and family (if family exists)
+        journal_config = None
         if item_family:
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id and r.item_family_id.id == item_family.id
             )[:1]
-        else:
-            # Fallback to company-only match
+
+        # Fallback to company-only match
+        if not journal_config:
             journal_config = chargebee_config.journal_config_ids.filtered(
                 lambda r: r.company_id.id == company.id
             )[:1]
@@ -1299,6 +1535,9 @@ class AccountMove(models.Model):
                 ('company_id', '=', company.id)
             ], limit=1)
         )
+
+        if credit_note_journal:
+            _logger.info(f"✅ Selected credit note journal: {credit_note_journal.name}")
 
         return credit_note_journal
 

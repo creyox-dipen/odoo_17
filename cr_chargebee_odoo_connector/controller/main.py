@@ -173,7 +173,7 @@ class ChargebeeWebhookController(http.Controller):
             if not odoo_invoice:
                 _logger.info("👉👉 invoice is not found for payment")
                 import time
-                time.sleep(0.9)  # Wait 900ms for invoice_generated event to complete
+                time.sleep(3.5)  # Wait 900ms for invoice_generated event to complete
                 odoo_invoice = AccountMove.search([('chargebee_id', '=', invoice_id)], limit=1)
 
             if not odoo_invoice:

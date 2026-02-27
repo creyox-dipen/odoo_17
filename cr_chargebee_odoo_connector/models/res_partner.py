@@ -136,13 +136,13 @@ class ResPartner(models.Model):
                     "email": chargebee_customer.email,
                     "phone": getattr(chargebee_customer, "phone", None),
                     "company_name": getattr(chargebee_customer, "company", None),
-                    "id": chargebee_customer.id,
+                    "chargebee_customer_id": chargebee_customer.id,
                     "company_id": customer_company.id,
                 }
 
                 # Update existing or create new
                 existing_partner = self.env["res.partner"].search(
-                    [("email", "=", chargebee_customer.email)], limit=1
+                    [("chargebee_customer_id", "=", chargebee_customer.id), ("company_id", "=", customer_company.id)], limit=1
                 )
                 if existing_partner:
                     existing_partner.write(partner_vals)

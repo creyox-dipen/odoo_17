@@ -62,6 +62,9 @@ class ChargebeeConfiguration(models.Model):
     # webhook fields
     webhook_url = fields.Char(
         string="Webhook URL",
+        compute="_compute_webhook_url",
+        store=True,
+        readonly=True,
         help="URL to configure in Chargebee for webhook notifications"
     )
     webhook_enabled = fields.Boolean(
@@ -70,20 +73,29 @@ class ChargebeeConfiguration(models.Model):
         help="Enable automatic invoice syncing via webhooks"
     )
 
-    def action_refresh_webhook_url(self):
-        """Refresh/update the webhook URL based on current base URL."""
+    @api.model
+    def create(self, vals_list):
         base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
-        self.webhook_url = f"{base_url}/chargebee/webhook"
 
+        for vals in vals_list:
+            if not vals.get("webhook_url"):
+                vals["webhook_url"] = f"{base_url}/chargebee/webhook"
+        return super().create(vals_list)
+
+    def _compute_webhook_url(self):
+        """Compute webhook URL based on system base URL."""
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+        for record in self:
+            record.webhook_url = f"{base_url}/chargebee/webhook"
+
+    def action_refresh_webhook_url(self):
+        base_url = self.env['ir.config_parameter'].sudo().get_param('web.base.url')
+
+        for record in self:
+            record.webhook_url = f"{base_url}/chargebee/webhook"
         return {
-            'type': 'ir.actions.client',
-            'tag': 'display_notification',
-            'params': {
-                'title': _('Webhook URL Updated'),
-                'message': _('Webhook URL has been refreshed successfully.'),
-                'type': 'success',
-                'sticky': False,
-            },
+            "type": "ir.actions.client",
+            "tag": "reload"
         }
 
     @api.depends("cr_data_logs_ids")

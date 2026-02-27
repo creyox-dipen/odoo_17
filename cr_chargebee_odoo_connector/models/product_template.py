@@ -24,9 +24,9 @@ class ProductTemplate(models.Model):
         """Sync items from Chargebee and create corresponding product records in Odoo."""
         chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
         if (
-            not chargebee_config
-            or not chargebee_config.api_key
-            or not chargebee_config.site_name
+                not chargebee_config
+                or not chargebee_config.api_key
+                or not chargebee_config.site_name
         ):
             raise ValueError(_("Chargebee configuration is incomplete."))
 
@@ -37,10 +37,9 @@ class ProductTemplate(models.Model):
         try:
             # Fetch items from Chargebee
             items = chargebee.Item.list({"limit": 100})  # Adjust limit as needed
-            print("length of itemss : ", len(items))
             for item_data in items:
                 item = item_data.item
-                _logger.info("❌❌❌item family : %s",item.item_family_id)
+
                 # Fetch item prices for the item
                 item_prices = chargebee.ItemPrice.list(
                     {"item_id[is]": item.id, "limit": 1}
@@ -58,7 +57,7 @@ class ProductTemplate(models.Model):
                 family = self.env["chargebee.item.family"].search(
                     [("chargebee_id", "=", item.item_family_id)], limit=1
                 )
-                _logger.info("❌❌❌family : %s",family)
+
                 # Get or create a valid product category
                 category = self.env["product.category"].search(
                     [("id", "=", family.id)], limit=1
@@ -77,7 +76,6 @@ class ProductTemplate(models.Model):
 
                 if existing_product:
                     # Update the existing product in base model
-                    _logger.info("❌❌❌ existing_product : %s",existing_product)
                     existing_product.write(
                         {
                             "name": item.name,
@@ -147,9 +145,9 @@ class ProductTemplate(models.Model):
         """Create an item in Chargebee under the selected family."""
         chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
         if (
-            not chargebee_config
-            or not chargebee_config.api_key
-            or not chargebee_config.site_name
+                not chargebee_config
+                or not chargebee_config.api_key
+                or not chargebee_config.site_name
         ):
             raise ValueError(_("Chargebee configuration is incomplete."))
 
@@ -165,7 +163,7 @@ class ProductTemplate(models.Model):
                 try:
                     existing_family = chargebee.ItemFamily.retrieve(self.id)
                 except chargebee.InvalidRequestError as e:
-                    print("not found item family")
+                    _logger.info(f"No existing item family found in Chargebee")
 
                 if existing_family:
                     # Link existing item family
@@ -208,7 +206,7 @@ class ProductTemplate(models.Model):
             try:
                 existing_item = chargebee.Item.retrieve(item_id)
             except chargebee.InvalidRequestError as e:
-                print("no item found with id")
+                _logger.info(f"No existing item found in Chargebee")
 
             if existing_item:
                 # Item already exists, link it to Odoo
