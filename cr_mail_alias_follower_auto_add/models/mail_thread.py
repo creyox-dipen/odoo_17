@@ -9,8 +9,7 @@ _logger = logging.getLogger(__name__)
 
 
 class MailThreadAutoFollower(models.AbstractModel):
-    _inherit = 'mail.thread'
-
+    _inherit = "mail.thread"
 
     def _add_to_recipients_as_followers(self, msg_dict):
         """
@@ -18,11 +17,11 @@ class MailThreadAutoFollower(models.AbstractModel):
         If a partner with the email already exists, it is subscribed directly.
         If no partner exists, a new one is created and then subscribed.
         """
-        to_header = msg_dict.get('to', '')
-        cc_header = msg_dict.get('cc', '')
+        to_header = msg_dict.get("to", "")
+        cc_header = msg_dict.get("cc", "")
 
         # Combine 'To' and 'CC' headers so CC recipients are also added as followers
-        combined_header = ', '.join(filter(None, [to_header, cc_header]))
+        combined_header = ", ".join(filter(None, [to_header, cc_header]))
         if not combined_header:
             return
 
@@ -32,7 +31,7 @@ class MailThreadAutoFollower(models.AbstractModel):
         if not addr_pairs:
             return
 
-        partner_model = self.env['res.partner']
+        partner_model = self.env["res.partner"]
         partner_ids = []
 
         for name, email in addr_pairs:
@@ -41,23 +40,25 @@ class MailThreadAutoFollower(models.AbstractModel):
                 continue
             email = email.lower().strip()
             # Search for existing partner
-            partner = partner_model.search([('email', '=ilike', email)], limit=1)
+            partner = partner_model.search([("email", "=ilike", email)], limit=1)
 
             if not partner:
                 # Create new partner if doesn't exist
                 print("creating new partner")
                 print("name:", name, "email:", email)
-                partner = partner_model.create({
-                    'name': name.split('@')[0] or email.split('@')[0],
-                    'email': email,
-                })
+                partner = partner_model.create(
+                    {
+                        "name": name.split("@")[0] or email.split("@")[0],
+                        "email": email,
+                    }
+                )
 
             # Force email notification for this partner if they are a user
             if partner.user_ids:
                 # Set notification type to email for users
                 for user in partner.user_ids:
-                    if user.notification_type != 'email':
-                        user.sudo().write({'notification_type': 'email'})
+                    if user.notification_type != "email":
+                        user.sudo().write({"notification_type": "email"})
 
             # Avoid duplicates
             if partner.id not in partner_ids:
@@ -68,19 +69,31 @@ class MailThreadAutoFollower(models.AbstractModel):
             try:
                 # Get only DEFAULT message subtypes (not all subtypes)
                 # This typically includes 'Discussions' but not system subtypes like 'Activities', 'Note', etc.
-                subtype_ids = self.env['mail.message.subtype'].search([
-                    '|', ('res_model', '=', self._name), ('res_model', '=', False),
-                    ('default', '=', True)  # Only default subtypes
-                ]).ids
+                subtype_ids = (
+                    self.env["mail.message.subtype"]
+                    .search(
+                        [
+                            "|",
+                            ("res_model", "=", self._name),
+                            ("res_model", "=", False),
+                            ("default", "=", True),  # Only default subtypes
+                        ]
+                    )
+                    .ids
+                )
 
                 # Remove already subscribed partners to re-subscribe with correct subtypes
                 existing_followers = self.message_partner_ids.ids
-                partners_to_subscribe = [p for p in partner_ids if p not in existing_followers]
+                partners_to_subscribe = [
+                    p for p in partner_ids if p not in existing_followers
+                ]
                 partners_to_update = [p for p in partner_ids if p in existing_followers]
 
                 # Subscribe new followers
                 if partners_to_subscribe:
-                    self.message_subscribe(partner_ids=partners_to_subscribe, subtype_ids=subtype_ids)
+                    self.message_subscribe(
+                        partner_ids=partners_to_subscribe, subtype_ids=subtype_ids
+                    )
 
                 # Update existing followers - but DON'T override admin's preferences
                 # Only update if they are NOT internal users (to preserve admin's settings)
@@ -89,19 +102,27 @@ class MailThreadAutoFollower(models.AbstractModel):
                     for pid in partners_to_update:
                         partner = partner_model.browse(pid)
                         # Skip internal users (like admin) - don't change their subscription preferences
-                        if not partner.user_ids or not any(u.share == False for u in partner.user_ids):
+                        if not partner.user_ids or not any(
+                            u.share == False for u in partner.user_ids
+                        ):
                             partners_to_update_filtered.append(pid)
 
                     if partners_to_update_filtered:
-                        followers = self.env['mail.followers'].search([
-                            ('res_model', '=', self._name),
-                            ('res_id', '=', self.id),
-                            ('partner_id', 'in', partners_to_update_filtered)
-                        ])
+                        followers = self.env["mail.followers"].search(
+                            [
+                                ("res_model", "=", self._name),
+                                ("res_id", "=", self.id),
+                                ("partner_id", "in", partners_to_update_filtered),
+                            ]
+                        )
                         for follower in followers:
-                            follower.sudo().write({'subtype_ids': [(6, 0, subtype_ids)]})
+                            follower.sudo().write(
+                                {"subtype_ids": [(6, 0, subtype_ids)]}
+                            )
 
-                _logger.info(f"Added followers from 'To' header: {partner_ids} to {self._name} record {self.id}")
+                _logger.info(
+                    f"Added followers from 'To' header: {partner_ids} to {self._name} record {self.id}"
+                )
             except Exception as e:
                 _logger.error(f"Error adding followers: {str(e)}")
 
@@ -118,40 +139,47 @@ class MailThreadAutoFollower(models.AbstractModel):
 
         return record
 
-
-
     def message_post(self, **kwargs):
         """
         Override message_post to add 'To' recipients as followers AND to partner_ids
         """
         # Check if this is an incoming email
-        email_from = kwargs.get('email_from')
-        message_type = kwargs.get('message_type', 'notification')
+        email_from = kwargs.get("email_from")
+        message_type = kwargs.get("message_type", "notification")
 
-        if email_from and message_type in ('comment', 'email'):
+        if email_from and message_type in ("comment", "email"):
             # Try to get msg_dict from kwargs or context
-            msg_dict = kwargs.get('msg_dict') or self.env.context.get('mail_create_message_dict')
+            msg_dict = kwargs.get("msg_dict") or self.env.context.get(
+                "mail_create_message_dict"
+            )
 
             if msg_dict:
                 self._add_to_recipients_as_followers(msg_dict)
 
                 # Store actual sender for use in notifications
-                if self.env.context.get('actual_email_sender'):
-                    kwargs['email_from'] = self.env.context.get('actual_email_sender')
+                if self.env.context.get("actual_email_sender"):
+                    kwargs["email_from"] = self.env.context.get("actual_email_sender")
 
-        subtype_xmlid = kwargs.get('subtype_xmlid', '')
+        subtype_xmlid = kwargs.get("subtype_xmlid", "")
 
         # CRITICAL: Only add followers to partner_ids when:
         # 1. message_type is 'comment' (user-initiated message, NOT 'notification' for system events)
         # 2. Not an incoming email (email_from is empty)
         # 3. Not a log note
-        if message_type == 'comment' and not email_from and subtype_xmlid != 'mail.mt_note':
+        if (
+            message_type == "comment"
+            and not email_from
+            and subtype_xmlid != "mail.mt_note"
+        ):
 
             # Get the subtype ID
             subtype_id = False
             if subtype_xmlid:
-                subtype = self.env['mail.message.subtype'].sudo().search([('name', '=', subtype_xmlid.split('.')[-1])],
-                                                                         limit=1)
+                subtype = (
+                    self.env["mail.message.subtype"]
+                    .sudo()
+                    .search([("name", "=", subtype_xmlid.split(".")[-1])], limit=1)
+                )
                 if not subtype:
                     subtype = self.env.ref(subtype_xmlid, raise_if_not_found=False)
                 if subtype:
@@ -159,26 +187,38 @@ class MailThreadAutoFollower(models.AbstractModel):
 
             # Get followers who are subscribed to this specific subtype
             if subtype_id:
-                followers_subscribed_to_subtype = self.env['mail.followers'].search([
-                    ('res_model', '=', self._name),
-                    ('res_id', '=', self.id),
-                    ('subtype_ids', 'in', [subtype_id])
-                ])
-                follower_partners = followers_subscribed_to_subtype.mapped('partner_id').ids
+                followers_subscribed_to_subtype = self.env["mail.followers"].search(
+                    [
+                        ("res_model", "=", self._name),
+                        ("res_id", "=", self.id),
+                        ("subtype_ids", "in", [subtype_id]),
+                    ]
+                )
+                follower_partners = followers_subscribed_to_subtype.mapped(
+                    "partner_id"
+                ).ids
             else:
                 # If no specific subtype, use all followers (fallback)
                 follower_partners = self.message_partner_ids.ids
 
-            _logger.info(f"BEFORE message_post - Message Type: {message_type}, Subtype: {subtype_xmlid}")
-            _logger.info(f"BEFORE message_post - Followers subscribed to subtype: {follower_partners}")
-            _logger.info(f"BEFORE message_post - kwargs partner_ids: {kwargs.get('partner_ids', [])}")
+            _logger.info(
+                f"BEFORE message_post - Message Type: {message_type}, Subtype: {subtype_xmlid}"
+            )
+            _logger.info(
+                f"BEFORE message_post - Followers subscribed to subtype: {follower_partners}"
+            )
+            _logger.info(
+                f"BEFORE message_post - kwargs partner_ids: {kwargs.get('partner_ids', [])}"
+            )
 
             if follower_partners:
-                existing_partner_ids = kwargs.get('partner_ids', [])
+                existing_partner_ids = kwargs.get("partner_ids", [])
                 # Merge follower partners with any explicitly specified partners
                 all_partner_ids = list(set(existing_partner_ids + follower_partners))
-                kwargs['partner_ids'] = all_partner_ids
-                _logger.info(f"AFTER message_post - Updated partner_ids: {all_partner_ids}")
+                kwargs["partner_ids"] = all_partner_ids
+                _logger.info(
+                    f"AFTER message_post - Updated partner_ids: {all_partner_ids}"
+                )
 
         # Call parent method
         result = super().message_post(**kwargs)
@@ -186,10 +226,6 @@ class MailThreadAutoFollower(models.AbstractModel):
         _logger.info(f"AFTER super().message_post - Result message ID: {result}")
 
         return result
-
-
-
-
 
     @api.model
     def _message_route_process(self, message, message_dict, routes):
@@ -205,17 +241,19 @@ class MailThreadAutoFollower(models.AbstractModel):
                     if record.exists():
                         existing_follower_ids = record.message_partner_ids.ids
 
-                        to_header = message_dict.get('to', '')
-                        cc_header = message_dict.get('cc', '')
-                        from_header = message_dict.get('from', '')
+                        to_header = message_dict.get("to", "")
+                        cc_header = message_dict.get("cc", "")
+                        from_header = message_dict.get("from", "")
 
                         # Combine TO and CC headers
-                        all_recipients_header = to_header + ',' + cc_header if cc_header else to_header
+                        all_recipients_header = (
+                            to_header + "," + cc_header if cc_header else to_header
+                        )
 
                         if all_recipients_header:
                             addr_pairs = getaddresses([all_recipients_header])
 
-                            partner_model = self.env['res.partner']
+                            partner_model = self.env["res.partner"]
                             partner_ids = []
                             recipients_who_already_got_email = []
 
@@ -223,18 +261,25 @@ class MailThreadAutoFollower(models.AbstractModel):
                                 if not email:
                                     continue
                                 email = email.lower().strip()
-                                partner = partner_model.search([('email', '=ilike', email)], limit=1)
+                                partner = partner_model.search(
+                                    [("email", "=ilike", email)], limit=1
+                                )
 
                                 if not partner:
-                                    partner = partner_model.create({
-                                        'name': name.split('@')[0] or email.split('@')[0],
-                                        'email': email,
-                                    })
+                                    partner = partner_model.create(
+                                        {
+                                            "name": name.split("@")[0]
+                                            or email.split("@")[0],
+                                            "email": email,
+                                        }
+                                    )
 
                                 if partner.user_ids:
                                     for user in partner.user_ids:
-                                        if user.notification_type != 'email':
-                                            user.sudo().write({'notification_type': 'email'})
+                                        if user.notification_type != "email":
+                                            user.sudo().write(
+                                                {"notification_type": "email"}
+                                            )
 
                                 if partner.id not in partner_ids:
                                     partner_ids.append(partner.id)
@@ -245,8 +290,11 @@ class MailThreadAutoFollower(models.AbstractModel):
                             if partner_ids:
 
                                 _logger.info(
-                                    f"Recipients who already got the original email: {recipients_who_already_got_email}")
-                                _logger.info(f"NOT sending duplicate Odoo notifications to them")
+                                    f"Recipients who already got the original email: {recipients_who_already_got_email}"
+                                )
+                                _logger.info(
+                                    f"NOT sending duplicate Odoo notifications to them"
+                                )
 
                                 # Add as followers only (not to current message recipients)
                                 record._add_to_recipients_as_followers(message_dict)
@@ -255,6 +303,3 @@ class MailThreadAutoFollower(models.AbstractModel):
                     _logger.error(f"Error in _message_route_process: {str(e)}")
 
         return super()._message_route_process(message, message_dict, routes)
-
-
-

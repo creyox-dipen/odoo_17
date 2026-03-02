@@ -87,7 +87,7 @@
                     </div>
                     <div class="col-md-12 py-2 text-center">
                         <a class="btn btn-primary btn-lg mt8" target="_blank" style="color: #FFFFFF !important;"
-                           href="">
+                           href="https://youtu.be/oay8pLGqU1M">
                             <i class="fa fa-check-square"></i> Watch Video </a>
                     </div>
                 </div>
@@ -109,17 +109,17 @@
                         <div class="col-12 col-md-12">
                             <div class="col-10 col-md-12" style="padding-left: 30px;">
                                 <p style="font-size: 20px;">
-                                    The <strong>Auto Add Followers via Mail Alias</strong> module is a powerful email routing extension 
+                                    The Auto Add Followers via Mail Alias module is a powerful email routing extension
                                     that seamlessly hooks into Odoo's core mail thread system. It entirely automates the 
                                     process of managing record followers by analyzing incoming email headers.
                                 </p>
                                 <p style="font-size: 20px;">
-                                    In the standard Odoo flow, when an email is received, the system checks the <strong>To</strong> and <strong>CC</strong> fields.
-                                    If a contact with the same email address already exists, that contact is added as a follower.
-                                    However, if no matching contact is found, Odoo simply skips that email address and does not add it as a follower.
+                                    In the standard Odoo flow, when an email is received, the system checks the To and CC fields to determine followers.
+                                    However, by default, Odoo only considers the first email address from the To recipients for adding as a follower, while the remaining To recipients are skipped.
+                                    Additionally, CC recipients are completely ignored and are not added as followers, even if matching contacts exist in the system.
                                 </p>
                                 <p style="font-size: 20px;">
-                                    Our module enhances this behavior. If any email address in the <strong>To</strong> or <strong>CC</strong> headers does not exist as a contact,
+                                    Our module enhances this behavior. If any email address in the To or CC headers does not exist as a contact,
                                     the module automatically creates a new contact using that email address and then adds the newly created contact as a follower to the record.
                                 </p>
                             </div>
@@ -181,72 +181,14 @@
             </section>
             <br/>
             <br/>
-            <div class="row mb-5">
-                <div class="col-12 col-md-12 text-center text-md-left">
-                    <center><h1 style="color: #000099;">Features</h1></center>
-                </div>
-            </div>
-            <div class="row align-items-center mb-4" style="margin-top:-25px">
-                <div class="col-12 col-md-12">
-                    <div class="container position-relative mt-4 shadow rounded"
-                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
-                        <div style="display:inline">
-                                <span class="fa fa-arrow-right"
-                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
-                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
-                                    Reads and processes all recipients from both To and CC fields of incoming emails.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="container position-relative mt-4 shadow rounded"
-                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
-                        <div style="display:inline">
-                                <span class="fa fa-arrow-right"
-                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
-                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
-                                   Automatically creates a new contact if an email address from the To or CC field does not already exist in the system.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="container position-relative mt-4 shadow rounded"
-                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
-                        <div style="display:inline">
-                                <span class="fa fa-arrow-right"
-                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
-                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
-                                  Eliminates the need to manually create contacts or add followers after receiving emails.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="container position-relative mt-4 shadow rounded"
-                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
-                        <div style="display:inline">
-                                <span class="fa fa-arrow-right"
-                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
-                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
-                                 Extends the standard mail alias flow without disrupting the default behavior.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="container position-relative mt-4 shadow rounded"
-                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
-                        <div style="display:inline">
-                                <span class="fa fa-arrow-right"
-                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
-                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
-                                 Ensures all relevant email recipients stay linked to the correct record.
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </div>
+
             <br/>
             <br/>
             <ul class="nav nav-tabs justify-content-center bg-transparent" id="nav-tab" role="tablist">
                 <li class="nav-item" role="presentation">
                     <a id="home-tab-backend" data-bs-toggle="pill" href="#pills-home" role="tab"
                        aria-controls="pills-home"
-                       aria-selected="true" class="nav-link active">Setup
+                       aria-selected="true" class="nav-link active">Features
                     </a>
                 </li>
                 <li class="nav-item">
@@ -262,16 +204,65 @@
                             home-tab">
                     <div class="row align-items-center mb-4" style="margin-top:-25px">
                         <div class="col-12 col-md-12 pt-5">
-                            <ul style="font-size: 22px;">
-                                <li>
-                                This application requires <b>Zero Configuration</b>. 
-                                </li>
-                                <li>
-                                Simply install the module, and it will immediately begin hooking into incoming Mail Threads 
-                                across all supporting objects (Tasks, Issues, CRM Leads) acting seamlessly in the background.
-                                </li>
-                                <!-- Place images dynamically if needed in future, currently omitting screenshots for backend since it is invisible -->
-                            </ul>
+                            <div class="row mb-5">
+                                <div class="col-12 col-md-12 text-center text-md-left">
+                                    <center><h1 style="color: #000099;">Features</h1></center>
+                                </div>
+                            </div>
+                            <div class="row align-items-center mb-4" style="margin-top:-25px">
+                                <div class="col-12 col-md-12">
+                                    <div class="container position-relative mt-4 shadow rounded"
+                                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                                        <div style="display:inline">
+                                                <span class="fa fa-arrow-right"
+                                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                                    Reads and processes all recipients from both To and CC fields of incoming emails.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="container position-relative mt-4 shadow rounded"
+                                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                                        <div style="display:inline">
+                                                <span class="fa fa-arrow-right"
+                                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                                   Automatically creates a new contact if an email address from the To or CC field does not already exist in the system.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="container position-relative mt-4 shadow rounded"
+                                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                                        <div style="display:inline">
+                                                <span class="fa fa-arrow-right"
+                                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                                  Eliminates the need to manually create contacts or add followers after receiving emails.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="container position-relative mt-4 shadow rounded"
+                                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                                        <div style="display:inline">
+                                                <span class="fa fa-arrow-right"
+                                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                                 Extends the standard mail alias flow without disrupting the default behavior.
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div class="container position-relative mt-4 shadow rounded"
+                                         style="background-color:#f8fffc; border-radius:10px; border-color:#dfdfdf; border:1px solid #dfdfdf; padding:15px ">
+                                        <div style="display:inline">
+                                                <span class="fa fa-arrow-right"
+                                                      style="color:#000099; font-weight:600; font-size:18px; padding-right:10px"></span>
+                                            <span style="font-size:18px; font-weight:500; color:#212529; text-transform:capitalize; padding-left:10px">
+                                                 Ensures all relevant email recipients stay linked to the correct record.
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="row mb-5">
@@ -292,10 +283,10 @@
                             <div class="col-md-4" style="margin-top:1rem">
                                 <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                     <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_mydsv_odoo"
+                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_dynamic_user_notification"
                                            target="_blank">
                                             <!-- Ensure C:\Odoo\odoo18_CE\odoo\custom\addons\18_sheet_db_migration\cr_odoo_to_sheets_connector\static\description\banner_images\* are copied over -->
-                                            <img src="banner_images/banner_mydsv.png"
+                                            <img src="banner_images/banner_dynamic_user_notification.png"
                                                  style="width:100%; height:200px; object-fit:contain">
                                         </a>
                                     </div>
@@ -304,9 +295,9 @@
                             <div class="col-md-4" style="margin-top:1rem">
                                 <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                     <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_bigquery_connector"
+                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_mailchamp_integration"
                                            target="_blank">
-                                            <img src="banner_images/banner_bigquerry.png"
+                                            <img src="banner_images/banner_mailchamp_integration.png"
                                                  style="width:100%; height:200px; object-fit:contain">
                                         </a>
                                     </div>
@@ -315,9 +306,9 @@
                             <div class="col-md-4" style="margin-top:1rem">
                                 <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                     <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_hcaptcha"
+                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_brevo_integration"
                                            target="_blank">
-                                            <img src="banner_images/banner_hcaptcha.png"
+                                            <img src="banner_images/banner_odoo_brevo_integration.png"
                                                  style="width:100%; height:200px; object-fit:contain">
                                         </a>
                                     </div>
@@ -326,20 +317,9 @@
                             <div class="col-md-4" style="margin-top:1rem">
                                 <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                     <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_smartsheet_connector"
+                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_kit_integration"
                                            target="_blank">
-                                            <img src="banner_images/banner_smart_sheet.png"
-                                                 style="width:100%; height:200px; object-fit:contain">
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4" style="margin-top:1rem">
-                                <div class="sh_content" style="text-align:center; border:1px solid #aaa">
-                                    <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_recurly_connector"
-                                           target="_blank">
-                                            <img src="banner_images/banner_recurly.png"
+                                            <img src="banner_images/banner_odoo_kit_integration.png"
                                                  style="width:100%; height:200px; object-fit:contain">
                                         </a>
                                     </div>
@@ -350,7 +330,18 @@
                                     <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
                                         <a href="https://apps.odoo.com/apps/modules/18.0/cr_3cx_crm_connector"
                                            target="_blank">
-                                            <img src="banner_images/banner_3cx_crm.png"
+                                            <img src="banner_images/banner_3cx_crm_connector.png"
+                                                 style="width:100%; height:200px; object-fit:contain">
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4" style="margin-top:1rem">
+                                <div class="sh_content" style="text-align:center; border:1px solid #aaa">
+                                    <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
+                                        <a href="https://apps.odoo.com/apps/modules/18.0/cr_pos_network_printer_res"
+                                           target="_blank">
+                                            <img src="banner_images/banner_pos_network_printer.png"
                                                  style="width:100%; height:200px; object-fit:contain">
                                         </a>
                                     </div>
@@ -525,7 +516,7 @@
                                            style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
                                             <span class="fa fa-question-circle"
                                                   style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
-                                            Can I export or import only selected columns instead of full data?
+                                            Will this module affect Odoo’s standard email workflow?
                                         </a>
                                     </h4>
                                 </div>
@@ -534,7 +525,7 @@
                                     <div class="panel-body" style="padding-top:20px">
                                         <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
                                             <li style="margin-bottom:0px">
-                                                Yes. You can choose exactly which columns you want to import from or export to Google Sheets. This helps keep your data clean and relevant.
+                                                No. The module extends Odoo’s default mail alias behavior without breaking or replacing the standard email routing logic.
                                             </li>
                                         </ul>
                                     </div>
@@ -549,7 +540,7 @@
                                            style="font-size:16px; margin:0; color:#212121; text-decoration:none; font-weight:600; letter-spacing:1px; display:flex">
                                             <span class="fa fa-question-circle"
                                                   style="color:#3363c1; font-weight:600; font-size:18px; padding-right:10px"></span>
-                                            How do I know if my data was synced successfully?
+                                            Is any configuration required after installation?
                                         </a>
                                     </h4>
                                 </div>
@@ -558,7 +549,7 @@
                                     <div class="panel-body" style="padding-top:20px">
                                         <ul style="font-size:16px; padding-left:30px; color:#555; margin:0">
                                             <li style="margin-bottom:0px">
-                                                Every import and export action is logged. You can review logs and history anytime to confirm what data was synced or to troubleshoot issues.
+                                                No. The module works immediately after installation and does not require any additional setup or configuration.
                                             </li>
                                         </ul>
                                     </div>
@@ -732,9 +723,9 @@
                                 <div class="col-md-4" style="margin-top:1rem">
                                     <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                         <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_mydsv_odoo"
+                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_dynamic_user_notification"
                                                target="_blank">
-                                                <img src="banner_images/banner_mydsv.png"
+                                                <img src="banner_images/banner_dynamic_user_notification.png"
                                                      style="width:100%; height:200px; object-fit:contain">
                                             </a>
                                         </div>
@@ -743,9 +734,9 @@
                                 <div class="col-md-4" style="margin-top:1rem">
                                     <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                         <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_bigquery_connector"
+                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_mailchamp_integration"
                                                target="_blank">
-                                                <img src="banner_images/banner_bigquerry.png"
+                                                <img src="banner_images/banner_mailchamp_integration.png"
                                                      style="width:100%; height:200px; object-fit:contain">
                                             </a>
                                         </div>
@@ -754,9 +745,9 @@
                                 <div class="col-md-4" style="margin-top:1rem">
                                     <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                         <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_hcaptcha"
+                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_brevo_integration"
                                                target="_blank">
-                                                <img src="banner_images/banner_hcaptcha.png"
+                                                <img src="banner_images/banner_odoo_brevo_integration.png"
                                                      style="width:100%; height:200px; object-fit:contain">
                                             </a>
                                         </div>
@@ -765,20 +756,9 @@
                                 <div class="col-md-4" style="margin-top:1rem">
                                     <div class="sh_content" style="text-align:center; border:1px solid #aaa">
                                         <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_smartsheet_connector"
+                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_odoo_kit_integration"
                                                target="_blank">
-                                                <img src="banner_images/banner_smart_sheet.png"
-                                                     style="width:100%; height:200px; object-fit:contain">
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-4" style="margin-top:1rem">
-                                    <div class="sh_content" style="text-align:center; border:1px solid #aaa">
-                                        <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
-                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_recurly_connector"
-                                               target="_blank">
-                                                <img src="banner_images/banner_recurly.png"
+                                                <img src="banner_images/banner_odoo_kit_integration.png"
                                                      style="width:100%; height:200px; object-fit:contain">
                                             </a>
                                         </div>
@@ -789,7 +769,18 @@
                                         <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
                                             <a href="https://apps.odoo.com/apps/modules/18.0/cr_3cx_crm_connector"
                                                target="_blank">
-                                                <img src="banner_images/banner_3cx_crm.png"
+                                                <img src="banner_images/banner_3cx_crm_connector.png"
+                                                     style="width:100%; height:200px; object-fit:contain">
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-4" style="margin-top:1rem">
+                                    <div class="sh_content" style="text-align:center; border:1px solid #aaa">
+                                        <div class="sh_img" style="padding:10px; border-bottom:1px solid #aaa">
+                                            <a href="https://apps.odoo.com/apps/modules/18.0/cr_pos_network_printer_res"
+                                               target="_blank">
+                                                <img src="banner_images/banner_pos_network_printer.png"
                                                      style="width:100%; height:200px; object-fit:contain">
                                             </a>
                                         </div>
