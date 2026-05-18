@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="product_sale_report" model="ir.actions.act_window">
+        <field name="name">Product Sales Report</field>
+        <field name="res_model">product.sale.report</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+    </record>
+
+    <record id="report_product_sale" model="ir.actions.report">
+        <field name="name">Product Sale Report</field>
+        <field name="model">product.sale.report</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">sold_product_report.product_sale</field>
+        <field name="report_file">sold_product_report.product_sale</field>
+        <field name="print_report_name">'Product sales'</field>
+        <field name="binding_type">report</field>
+    </record>
+
+    <menuitem id="menu_report_product_sale" name="Product Sales Report" action="product_sale_report" parent="sale.menu_sale_report" sequence="11"/>
+
+</odoo>

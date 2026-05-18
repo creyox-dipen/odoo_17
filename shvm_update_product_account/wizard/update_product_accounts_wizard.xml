@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="update_product_accounts_form_view" model="ir.ui.view">
+        <field name="name">Mass Update Product Account</field>
+        <field name="model">update.product.accounts</field>
+        <field name="arch" type="xml">
+            <form>
+                <group>
+                    <group>
+                        <field name="change_type" widget="radio"/>
+                    </group>
+                    <group>
+                        <field name="change_account_type" widget="radio"/>
+                        <!-- <field name="income_account_id" string="Income Account" options="{'no_create': True, 'no_create_edit':True}" attrs="{'invisible': [('change_account_type', '=', 'expense')], 'required': [('change_account_type', 'in', ['income', 'both'])]}"/>
+                        <field name="expense_account_id" string="Expense Account" options="{'no_create': True, 'no_create_edit':True}" attrs="{'invisible': [('change_account_type', '=', 'income')], 'required': [('change_account_type', 'in', ['expense', 'both'])]}"/> -->
+
+                        <field name="income_account_id" string="Income Account" options="{'no_create': True, 'no_create_edit':True}" invisible="change_account_type not in ('income', 'both')" required="change_account_type in ('income','both')"/>
+                        <field name="expense_account_id" string="Expense Account" options="{'no_create': True, 'no_create_edit':True}" invisible="change_account_type not in ('expense', 'both')" required="change_account_type in ('expense','both')"/>
+                    </group>
+                </group>
+                <group>
+                    <!-- <field name="categ_id" attrs="{'invisible': [('change_type', '!=', 'category')], 'required': [('change_type', '=', 'category')]}"/>
+                    <field name="product_id" widget="many2many_tags" attrs="{'invisible': [('change_type', '!=', 'product')], 'required': [('change_type', '=', 'product')]}"/> -->
+
+
+                    <field name="categ_id" invisible="change_type != 'category'" required="change_type == 'category'"/>
+                    <field name="product_id" widget="many2many_tags" invisible="change_type != 'product'" required="change_type == 'category'"/>
+                </group>
+                <footer>
+                    <button string="Apply" class="btn-primary" type="object" name="update_product_account"/>
+                    <button string="Close" class="btn-primary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_update_product_account" model="ir.actions.act_window">
+        <field name="name">Mass Update Product Account</field>
+        <field name="type">ir.actions.act_window</field>
+        <field name="res_model">update.product.accounts</field>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="update_product_accounts_form_view"/>
+        <field name="target">new</field>
+    </record>
+
+    <menuitem id="mass_account_update_menu"
+              name="Update Product Account"
+              parent="sale.product_menu_catalog"
+              action="action_update_product_account"
+              sequence="701"/>
+</odoo>

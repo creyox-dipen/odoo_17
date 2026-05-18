@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ============================================================
+         CalDAV Accounts menu under Settings Technical
+    ============================================================ -->
+    <menuitem
+        id="menu_caldav_accounts"
+        name="CalDAV Accounts"
+        parent="base.menu_administration"
+        action="action_caldav_account"
+        groups="base.group_system"
+        active="0"
+        sequence="120"
+    />
+
+</odoo>

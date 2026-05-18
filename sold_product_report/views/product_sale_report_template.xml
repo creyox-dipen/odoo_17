@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <data>
+        <template id="product_sale">
+            <t t-set="company" t-value="env.company"/>
+            <t t-call="web.html_container">
+                <t t-call="web.external_layout">
+                    <t t-foreach="docs" t-as="o">
+                        <div class="page">
+                            <h2 class="text-center">Product Sales Report</h2>
+                            <br/>
+                            <table style="font-size: 18px; width:100%;">
+                                <tr>
+                                    <td style="width: 7%;">From:</td>
+                                    <td style="width:43%; text-align:left;">
+                                        <t t-esc="o.start_date"/>
+                                    </td>
+                                    <td style="width:10%;">To:</td>
+                                    <td style="width:40%; text-align:left;">
+                                        <t t-esc="o.end_date"/>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="width: 7%; padding-top: 10px;">Type:</td>
+                                    <td style="width:43%; text-align:left;">
+                                        <t t-foreach='o.product_sale_report()["type"]' t-as="type">
+                                            <t t-esc="type['report_type']"/>
+                                        </t>
+                                    </td>
+                                    <t t-if="o.categ_id">
+                                        <td style="width:10%; padding-top: 10px;">Category:</td>
+                                        <td style="width:40%; text-align:left;">
+                                            <t t-foreach="o.categ_id" t-as="category">
+                                                <t t-esc="category.name"/>
+                                                <span>,</span>
+                                            </t>
+                                        </td>
+                                    </t>
+                                </tr>
+                            </table>
+                            <hr style="border: 1px solid black;"/>
+                            <br/>
+
+                            <table class="table table-sm o_main_table mt-4">
+                                <thead>
+                                    <tr style="border: 1px solid black; font-size: 18px; font-weight: bold;">
+                                        <th class="text-start">Name</th>
+                                        <th class="text-start">Sold Qty.</th>
+                                        <th class="text-start">Barcode</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <t t-set="total_items" t-value="0"/>
+                                    <tr t-foreach='o.product_sale_report()["products"]' t-as='product'>
+                                        <t t-set="total_items" t-value="total_items + product['quantity']"/>
+                                        <td>
+                                            <span t-esc="product['product_name']"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="product['quantity']"/>
+                                        </td>
+                                        <td>
+                                            <span t-esc="product['barcode']"/>
+                                        </td>
+                                    </tr>
+                                    <t t-if="total_items > 0">
+                                        <tr style="font-size: 18px;">
+                                            <th>
+                                                <br/>
+                                                <strong>Total Items:</strong>
+                                            </th>
+                                            <td>
+                                                <br/>
+                                                <strong>
+                                                    <span t-esc="total_items"/>
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </tbody>
+                            </table>
+                            <t t-if="total_items == 0">
+                                <span style="font-size: 20px;" class="text-danger text-center">No records found for your
+                                    search!
+                                </span>
+                            </t>
+                        </div>
+                    </t>
+                </t>
+            </t>
+        </template>
+    </data>
+</odoo>
