@@ -81,7 +81,7 @@ class NmiController(http.Controller):
             fee_label = "Debit Card Surcharge"
 
         if fee_percentage > 0:
-            surcharge_amount = (tx_sudo.amount * fee_percentage) / 100
+            surcharge_amount = tx_sudo.currency_id.round((tx_sudo.amount * fee_percentage) / 100)
             amount_to_charge = tx_sudo.amount + surcharge_amount
             
             # Update the Sale Order to include the fee so the totals match

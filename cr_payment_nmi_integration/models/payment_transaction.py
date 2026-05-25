@@ -189,7 +189,7 @@ class PaymentTransaction(models.Model):
             fee_label = "Debit Card Surcharge"
 
         if fee_percentage > 0:
-            surcharge_amount = (self.amount * fee_percentage) / 100
+            surcharge_amount = self.currency_id.round((self.amount * fee_percentage) / 100)
             amount_to_charge = self.amount + surcharge_amount
             
             for order in self.sale_order_ids:
