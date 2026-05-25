@@ -193,7 +193,7 @@ class PaymentTransaction(models.Model):
             amount_to_charge = self.amount + surcharge_amount
             
             for order in self.sale_order_ids:
-                fee_product = self.env['product.template'].sudo().search([('default_code', '=', fee_product_code)], limit=1)
+                fee_product = self.env['product.product'].sudo().search([('default_code', '=', fee_product_code)], limit=1)
                 existing_fee_line = order.order_line.filtered(lambda l: "Surcharge" in l.name)
                 if not existing_fee_line:
                     self.env['sale.order.line'].sudo().create({

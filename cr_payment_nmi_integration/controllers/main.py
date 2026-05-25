@@ -88,10 +88,10 @@ class NmiController(http.Controller):
             for order in tx_sudo.sale_order_ids:
                 _logger.info("NMI: Adding %s line to order %s", fee_label, order.name)
                 
-                fee_product = request.env['product.template'].sudo().search([
+                fee_product = request.env['product.product'].sudo().search([
                     ('default_code', '=', fee_product_code)
                 ], limit=1)
-
+                _logger.info("NMI: Fee product %s", fee_product)
                 # Check if a surcharge line already exists to avoid duplicates
                 existing_fee_line = order.order_line.filtered(lambda l: "Surcharge" in l.name)
                 if not existing_fee_line:
