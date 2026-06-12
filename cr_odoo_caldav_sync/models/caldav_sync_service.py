@@ -423,23 +423,31 @@ class CalDAVSyncService(models.AbstractModel):
                 if not hasattr(server_base.dtstart, "params"):
                     server_base.dtstart.params = {}
                 server_base.dtstart.params["VALUE"] = ["DATE"]
+                server_base.dtstart.params.pop("TZID", None)
+                server_base.dtstart.params.pop("X-VOBJ-ORIGINAL-TZID", None)
                 if hasattr(server_base, "dtend"):
                     server_base.dtend.value = base_event.stop.date() + timedelta(days=1)
                     if not hasattr(server_base.dtend, "params"):
                         server_base.dtend.params = {}
                     server_base.dtend.params["VALUE"] = ["DATE"]
+                    server_base.dtend.params.pop("TZID", None)
+                    server_base.dtend.params.pop("X-VOBJ-ORIGINAL-TZID", None)
             else:
                 server_base.dtstart.value = _to_utc_naive(base_event.start).replace(
                     tzinfo=pytz.utc
                 )
                 if hasattr(server_base.dtstart, "params"):
                     server_base.dtstart.params.pop("VALUE", None)
+                    server_base.dtstart.params.pop("TZID", None)
+                    server_base.dtstart.params.pop("X-VOBJ-ORIGINAL-TZID", None)
                 if hasattr(server_base, "dtend"):
                     server_base.dtend.value = _to_utc_naive(base_event.stop).replace(
                         tzinfo=pytz.utc
                     )
                     if hasattr(server_base.dtend, "params"):
                         server_base.dtend.params.pop("VALUE", None)
+                        server_base.dtend.params.pop("TZID", None)
+                        server_base.dtend.params.pop("X-VOBJ-ORIGINAL-TZID", None)
                 elif hasattr(server_base, "duration"):
                     server_base.duration.value = base_event.stop - base_event.start
 
@@ -535,6 +543,9 @@ class CalDAVSyncService(models.AbstractModel):
                         ex_val = pytz.utc.localize(ex_dt_naive)
 
                     if hasattr(server_base, "exdate"):
+                        if hasattr(server_base.exdate, "params"):
+                            server_base.exdate.params.pop("TZID", None)
+                            server_base.exdate.params.pop("X-VOBJ-ORIGINAL-TZID", None)
                         _ex_list = server_base.exdate.value
                         if not isinstance(_ex_list, (list, tuple)):
                             _ex_list = [_ex_list]
