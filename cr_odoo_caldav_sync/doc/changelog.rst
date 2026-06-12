@@ -1,4 +1,4 @@
-18.0.0.0(Date: 24th April,2026)
+17.0.0.0(Date: 12th June,2026)
 -------------------------------
 
-- Synchronize events with Google, Zoho, iCloud, Radicale, and Nextcloud servers.
+- migrated the module from version 18 to 17.
