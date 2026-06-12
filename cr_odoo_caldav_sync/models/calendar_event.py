@@ -21,13 +21,21 @@ class CalendarEvent(models.Model):
     The only hook here is ensuring a UID exists before the event is saved.
     """
 
-    _inherit = 'calendar.event'
+    _inherit = "calendar.event"
 
     caldav_uid = fields.Char(
-        string='CalDAV UID',
+        string="CalDAV UID",
         copy=False,
         index=True,
-        help='UUID used as the iCal UID for this event. Generated automatically.',
+        help="UUID used as the iCal UID for this event. Generated automatically.",
+    )
+
+    caldav_original_start = fields.Datetime(
+        string="CalDAV Original Start",
+        copy=False,
+        help="The original start datetime of this occurrence before it was modified. "
+        "Used as the RECURRENCE-ID in CalDAV sync to identify which occurrence "
+        "is being overridden.",
     )
 
     @api.model_create_multi
@@ -39,15 +47,17 @@ class CalendarEvent(models.Model):
         :rtype: recordset
         """
         for vals in vals_list:
-            if not vals.get('caldav_uid'):
-                vals['caldav_uid'] = str(uuid.uuid4())
+            if not vals.get("caldav_uid"):
+                vals["caldav_uid"] = str(uuid.uuid4())
         return super().create(vals_list)
 
     def write(self, values):
-        """Override write to auto-assign CalDAV UID if missing.
+        """Override write to auto-assign CalDAV UID if missing and track original start.
 
         Ensures events created before module installation also receive a UID
-        on their next write operation.
+        on their next write operation. Also captures the original start date
+        for recurring occurrences before they are moved, ensuring RECURRENCE-ID
+        consistency during sync.
 
         :param dict values: Field-value pairs to update.
         :return: True on success.
@@ -55,47 +65,39 @@ class CalendarEvent(models.Model):
         """
         for record in self:
             if not record.caldav_uid:
-                values.setdefault('caldav_uid', str(uuid.uuid4()))
-                break
+                values.setdefault("caldav_uid", str(uuid.uuid4()))
+
+            # If start is changing and this is a recurring occurrence that doesn't
+            # have an original start yet, record the CURRENT start as original.
+            if (
+                "start" in values
+                and record.recurrence_id
+                and not record.caldav_original_start
+            ):
+                values["caldav_original_start"] = record.start
+
         return super().write(values)
 
     def unlink(self):
-        """Intercept deletion to propagate CalDAV removals.
-
-        For **Google** recurring series:
-          - (A) Deleting a non-base occurrence: Record EXDATE in ``google_exdates``
-                and immediately re-push the series.
-          - (B) Deleting the base occurrence: Rewrite EXDATE + UID on the next
-                occurrence, re-push, and transfer the map.
-          - (C) Deleting the last occurrence: Full CalDAV DELETE (falls through).
-
-        For **Basic Auth** servers (Radicale, Baïkal, Nextcloud, etc.):
-          - (A) Deleting a non-base occurrence: Re-push the series .ics. Odoo's own
-                recurrence engine embeds EXDATE in the rrule before this hook runs,
-                so the re-push delivers the updated EXDATE to the CalDAV server.
-          - (B) Deleting the base/first occurrence: Transfer the map to the new
-                Odoo-promoted base event and re-push the series from it.
-          - (C) Deleting the last occurrence: Full CalDAV DELETE (falls through).
-
-        For single (non-recurring) events on any server type:
-          - Perform a standard CalDAV DELETE via the Universal Direct Delete section.
-        """
-        print("unlink called")
+        """Intercept deletion to propagate CalDAV removals."""
         event_ids = self.ids
-        _logger.info('[UNLINK] Triggered for event ids: %s', event_ids)
+        _logger.info("[UNLINK] Triggered for event ids: %s", event_ids)
 
-        # 1. Collect all map records for these events BEFORE the loop.
-        # This prevents Odoo's ondelete='cascade' from unlinking the maps
-        # before we can read their href/etag for the CalDAV DELETE request.
-        all_maps = self.env['caldav.event.map'].sudo().search([
-            ('event_id', 'in', event_ids),
-        ])
-        _logger.debug('[UNLINK] Found %s mapping records for these events.', len(all_maps))
+        all_maps = (
+            self.env["caldav.event.map"]
+            .sudo()
+            .search(
+                [
+                    ("event_id", "in", event_ids),
+                ]
+            )
+        )
+        _logger.debug(
+            "[UNLINK] Found %s mapping records for these events.", len(all_maps)
+        )
 
-        sync_svc = self.env['caldav.sync.service']
+        sync_svc = self.env["caldav.sync.service"]
 
-        # Track map IDs that were already handled by the recurring logic so the
-        # "Universal Direct Delete" section below skips them.
         handled_map_ids = set()
 
         for event in self:
@@ -107,205 +109,265 @@ class CalendarEvent(models.Model):
             if not base_event:
                 continue
 
-            start_iso = event.start.strftime('%Y%m%dT%H%M%SZ') if event.start else None
+            original_start = event.caldav_original_start or event.start
+            start_iso = (
+                original_start.strftime("%Y%m%dT%H%M%SZ") if original_start else None
+            )
 
-            # --- GOOGLE RECURRING SERIES LOGIC ---
-            google_base_maps = self.env['caldav.event.map'].sudo().search([
-                ('event_id', '=', base_event.id),
-                ('account_id.server_type', '=', 'google'),
-            ])
+            google_base_maps = (
+                self.env["caldav.event.map"]
+                .sudo()
+                .search(
+                    [
+                        ("event_id", "=", base_event.id),
+                        ("account_id.server_type", "=", "google"),
+                    ]
+                )
+            )
+            seen_google_accounts = set()
 
             for g_map in google_base_maps:
                 handled_map_ids.add(g_map.id)
                 if event.id == base_event.id:
-                    # CASE B: Delete Base -> Promote next occurrence to base
-                    _logger.info('[UNLINK] Scenario B (Google): Base Delete (id=%s)', event.id)
-                    next_occ = self.env['calendar.event'].sudo().search([
-                        ('recurrence_id', '=', recurrence.id),
-                        ('active', '=', True),
-                        ('id', 'not in', event_ids),
-                    ], order='start asc', limit=1)
+                    # Deduplicate: if we already handled this account, just clean up the extra map
+                    if g_map.account_id.id in seen_google_accounts:
+                        _logger.info(
+                            "[UNLINK] Scenario B (Google): Duplicate map id=%s for account %s — unlinking.",
+                            g_map.id,
+                            g_map.account_id.name,
+                        )
+                        # Keep in handled_map_ids so generic DELETE block skips it
+                        continue
+                    seen_google_accounts.add(g_map.account_id.id)
+
+                    _logger.info(
+                        "[UNLINK] Scenario B (Google): Base Delete (id=%s)", event.id
+                    )
+                    next_occ = (
+                        self.env["calendar.event"]
+                        .sudo()
+                        .search(
+                            [
+                                ("recurrence_id", "=", recurrence.id),
+                                ("active", "=", True),
+                                ("id", "not in", event_ids),
+                            ],
+                            order="start asc",
+                            limit=1,
+                        )
+                    )
 
                     if next_occ:
                         if next_occ.caldav_uid != g_map.caldav_uid:
-                            next_occ.sudo().write({'caldav_uid': g_map.caldav_uid})
-
-                        ex_list = set(d for d in (g_map.google_exdates or '').split(',') if d)
+                            next_occ.sudo().write({"caldav_uid": g_map.caldav_uid})
+                        ex_list = set(
+                            d for d in (g_map.google_exdates or "").split(",") if d
+                        )
                         if start_iso:
                             ex_list.add(start_iso)
-                        new_exdates = ','.join(sorted(ex_list))
-
-                        g_map.sudo().write({'google_exdates': new_exdates})
-                        push_success = False
-                        try:
-                            sync_svc._push_single_event(g_map.account_id, event, g_map)
-                            push_success = True
-                        except Exception as e:
-                            _logger.warning('[UNLINK] Scenario B (Google) push failed: %s', e)
-
-                        # Transfer series mapping to the new base event
-                        g_map.sudo().write({
-                            'event_id': next_occ.id,
-                            'last_odoo_write': next_occ.write_date if push_success else False,
-                            'google_exdates': new_exdates,
-                        })
+                        new_exdates = ",".join(sorted(ex_list))
+                        g_map.sudo().write(
+                            {
+                                "event_id": next_occ.id,
+                                "last_odoo_write": False,
+                                "google_exdates": new_exdates,
+                            }
+                        )
                     else:
-                        # CASE C: Last occurrence in series deleted -> handle via direct map DELETE below
                         handled_map_ids.discard(g_map.id)
                 else:
-                    # CASE A: Delete occurrence -> Add EXDATE to base map and re-push
-                    _logger.info('[UNLINK] Scenario A (Google): Occurrence Delete (id=%s)', event.id)
-                    ex_list = set(d for d in (g_map.google_exdates or '').split(',') if d)
+                    _logger.info(
+                        "[UNLINK] Scenario A (Google): Occurrence Delete (id=%s)",
+                        event.id,
+                    )
+                    ex_list = set(
+                        d for d in (g_map.google_exdates or "").split(",") if d
+                    )
                     if start_iso:
                         ex_list.add(start_iso)
-                    new_exdates = ','.join(sorted(ex_list))
+                    new_exdates = ",".join(sorted(ex_list))
+                    g_map.sudo().write(
+                        {"google_exdates": new_exdates, "last_odoo_write": False}
+                    )
 
-                    g_map.sudo().write({'google_exdates': new_exdates})
-                    try:
-                        sync_svc._push_single_event(g_map.account_id, base_event, g_map)
-                    except Exception as e:
-                        _logger.warning('[UNLINK] Scenario A (Google) push failed: %s', e)
-                        g_map.sudo().write({'last_odoo_write': False})
+                    # Mark the occurrence's OWN map as handled so the generic
+                    # DELETE block below does not attempt to DELETE the base .ics
+                    occ_maps = (
+                        self.env["caldav.event.map"]
+                        .sudo()
+                        .search(
+                            [
+                                ("event_id", "=", event.id),
+                                ("account_id", "=", g_map.account_id.id),
+                            ]
+                        )
+                    )
+                    for occ_map in occ_maps:
+                        handled_map_ids.add(occ_map.id)
 
-            # --- BASIC AUTH (RADICALE/BAIKAL/NEXTCLOUD) RECURRING SERIES LOGIC ---
-            # For standard CalDAV servers, EXDATE must be embedded in the .ics file.
-            # Odoo does NOT natively add EXDATE to recurrence.rrule on deletion.
-            # We track deleted occurrence dates in the map's google_exdates field
-            # (reused for all server types) and inject them when building the iCal.
-            basic_base_maps = self.env['caldav.event.map'].sudo().search([
-                ('event_id', '=', base_event.id),
-                ('account_id.server_type', '!=', 'google'),
-            ])
+            basic_base_maps = (
+                self.env["caldav.event.map"]
+                .sudo()
+                .search(
+                    [
+                        ("event_id", "=", base_event.id),
+                        ("account_id.server_type", "!=", "google"),
+                    ]
+                )
+            )
             _logger.info(
                 '[UNLINK] Basic Auth: found %s map(s) for base_event id=%s ("%s").',
-                len(basic_base_maps), base_event.id, base_event.name,
+                len(basic_base_maps),
+                base_event.id,
+                base_event.name,
             )
 
             for b_map in basic_base_maps:
                 handled_map_ids.add(b_map.id)
                 _logger.info(
-                    '[UNLINK] Basic Auth: processing map id=%s, href=%s, account=%s.',
-                    b_map.id, b_map.caldav_href, b_map.account_id.name,
+                    "[UNLINK] Basic Auth: processing map id=%s, href=%s, account=%s.",
+                    b_map.id,
+                    b_map.caldav_href,
+                    b_map.account_id.name,
                 )
                 if event.id == base_event.id:
-                    # CASE B (Basic): Delete Base -> Promote next occurrence to base.
-                    # Odoo promotes the next occurrence via _select_new_base_event automatically.
-                    # We transfer the map to that new base, record the deleted base as
-                    # an EXDATE, and re-push the series.
-                    _logger.info('[UNLINK] Scenario B (Basic): Base Delete (id=%s, start=%s)', event.id, start_iso)
-                    next_occ = self.env['calendar.event'].sudo().search([
-                        ('recurrence_id', '=', recurrence.id),
-                        ('active', '=', True),
-                        ('id', 'not in', event_ids),
-                    ], order='start asc', limit=1)
+                    _logger.info(
+                        "[UNLINK] Scenario B (Basic): Base Delete (id=%s, start=%s)",
+                        event.id,
+                        start_iso,
+                    )
+                    next_occ = (
+                        self.env["calendar.event"]
+                        .sudo()
+                        .search(
+                            [
+                                ("recurrence_id", "=", recurrence.id),
+                                ("active", "=", True),
+                                ("id", "not in", event_ids),
+                            ],
+                            order="start asc",
+                            limit=1,
+                        )
+                    )
 
                     if next_occ:
-                        # CRITICAL: Copy the original series UID to the new base so the
-                        # UID inside the pushed iCal matches the href (e.g. /OCC1_UUID.ics).
-                        # Without this, the file at OCC1_UUID.ics would contain OCC2's UID,
-                        # causing a UID/href mismatch that confuses CalDAV clients.
                         if next_occ.caldav_uid != b_map.caldav_uid:
                             _logger.info(
-                                '[UNLINK] Scenario B (Basic): Copying UID from map (%s) '
-                                'to next_occ (id=%s, current uid=%s) so href and iCal UID match.',
-                                b_map.caldav_uid, next_occ.id, next_occ.caldav_uid,
+                                "[UNLINK] Scenario B (Basic): Copying UID from map (%s) "
+                                "to next_occ (id=%s, current uid=%s) so href and iCal UID match.",
+                                b_map.caldav_uid,
+                                next_occ.id,
+                                next_occ.caldav_uid,
                             )
-                            next_occ.sudo().write({'caldav_uid': b_map.caldav_uid})
+                            next_occ.sudo().write({"caldav_uid": b_map.caldav_uid})
 
-                        # Record the deleted base's date as an EXDATE
-                        ex_list = set(d.strip() for d in (b_map.google_exdates or '').split(',') if d.strip())
+                        ex_list = set(
+                            d.strip()
+                            for d in (b_map.google_exdates or "").split(",")
+                            if d.strip()
+                        )
                         if start_iso:
                             ex_list.add(start_iso)
-                        new_exdates = ','.join(sorted(ex_list))
+                        new_exdates = ",".join(sorted(ex_list))
                         _logger.info(
-                            '[UNLINK] Scenario B (Basic): Accumulated EXDATEs for map id=%s: %s',
-                            b_map.id, new_exdates,
+                            "[UNLINK] Scenario B (Basic): Accumulated EXDATEs for map id=%s: %s",
+                            b_map.id,
+                            new_exdates,
                         )
-                        # Transfer the map to the new base and write EXDATEs
-                        b_map.sudo().write({
-                            'event_id': next_occ.id,
-                            'google_exdates': new_exdates,
-                            'last_odoo_write': False,
-                        })
-                        try:
-                            sync_svc._push_single_event(b_map.account_id, next_occ, b_map)
-                            _logger.info(
-                                '[UNLINK] Scenario B (Basic): Push successful. '
-                                'Radicale should now have DTSTART=original + EXDATE=%s.',
-                                start_iso,
-                            )
-                        except Exception as e:
-                            _logger.warning('[UNLINK] Scenario B (Basic) push failed: %s', e)
+                        b_map.sudo().write(
+                            {
+                                "event_id": next_occ.id,
+                                "google_exdates": new_exdates,
+                                "last_odoo_write": False,
+                            }
+                        )
                     else:
-                        # CASE C (Basic): Last occurrence deleted -> allow full CalDAV DELETE below
-                        _logger.info('[UNLINK] Scenario C (Basic): Last occurrence — will DELETE series.')
+
+                        _logger.info(
+                            "[UNLINK] Scenario C (Basic): Last occurrence — will DELETE series."
+                        )
                         handled_map_ids.discard(b_map.id)
                 else:
-                    # CASE A (Basic): Non-base occurrence deleted.
-                    # CRITICAL: Record the occurrence's start date as an EXDATE in the map.
-                    # _odoo_event_to_ical will read this and inject it into the iCal.
-                    # Odoo does NOT embed EXDATE in recurrence.rrule automatically.
-                    ex_list = set(d.strip() for d in (b_map.google_exdates or '').split(',') if d.strip())
+                    ex_list = set(
+                        d.strip()
+                        for d in (b_map.google_exdates or "").split(",")
+                        if d.strip()
+                    )
                     if start_iso:
                         ex_list.add(start_iso)
-                    new_exdates = ','.join(sorted(ex_list))
+                    new_exdates = ",".join(sorted(ex_list))
                     _logger.info(
-                        '[UNLINK] Scenario A (Basic): Occurrence Delete (id=%s, start=%s). '
-                        'Accumulated EXDATEs for map id=%s: %s',
-                        event.id, start_iso, b_map.id, new_exdates,
+                        "[UNLINK] Scenario A (Basic): Occurrence Delete (id=%s, start=%s). "
+                        "Accumulated EXDATEs for map id=%s: %s",
+                        event.id,
+                        start_iso,
+                        b_map.id,
+                        new_exdates,
                     )
-                    # Write accumulated EXDATEs to map BEFORE pushing so _odoo_event_to_ical picks them up
-                    b_map.sudo().write({'google_exdates': new_exdates})
-                    try:
-                        sync_svc._push_single_event(b_map.account_id, base_event, b_map)
-                        _logger.info(
-                            '[UNLINK] Scenario A (Basic): Push successful. '
-                            'Radicale should now have EXDATE=%s in the .ics.',
-                            start_iso,
-                        )
-                    except Exception as e:
-                        _logger.warning('[UNLINK] Scenario A (Basic) push failed: %s', e)
-                        b_map.sudo().write({'last_odoo_write': False})
 
-        # --- UNIVERSAL DIRECT DELETE (Single events and series final cleanup) ---
+                    b_map.sudo().write(
+                        {"google_exdates": new_exdates, "last_odoo_write": False}
+                    )
+                    occ_maps = (
+                        self.env["caldav.event.map"]
+                        .sudo()
+                        .search(
+                            [
+                                ("event_id", "=", event.id),
+                                ("account_id", "=", b_map.account_id.id),
+                            ]
+                        )
+                    )
+                    for occ_map in occ_maps:
+                        handled_map_ids.add(occ_map.id)
+
         for map_rec in all_maps:
             if not map_rec.exists():
                 continue
-            # Skip maps already handled by Google or Basic recurring logic above.
+
             if map_rec.id in handled_map_ids:
                 _logger.debug(
-                    '[UNLINK] Map id=%s already handled by recurring logic, skipping DELETE.',
+                    "[UNLINK] Map id=%s already handled by recurring logic, skipping DELETE.",
                     map_rec.id,
                 )
                 continue
-            # If the map was already transferred to a new base (Scenario B), keep it.
             if map_rec.event_id and map_rec.event_id.id not in event_ids:
                 _logger.debug(
-                    '[UNLINK] Map id=%s was promoted to next occurrence, skipping DELETE.',
+                    "[UNLINK] Map id=%s was promoted to next occurrence, skipping DELETE.",
                     map_rec.id,
                 )
+                continue
+
+            if (
+                map_rec.event_id
+                and map_rec.event_id.recurrence_id
+                and map_rec.event_id.id
+                != map_rec.event_id.recurrence_id.base_event_id.id
+            ):
+                _logger.info(
+                    "[UNLINK] Map id=%s belongs to occurrence. Skipping HTTP DELETE to prevent series wipe.",
+                    map_rec.id,
+                )
+                map_rec.unlink()
                 continue
 
             try:
                 _logger.info(
                     '[UNLINK] CalDAV DELETE: event "%s" (id=%s) via account %s at %s',
-                    map_rec.event_id.name, map_rec.event_id.id,
-                    map_rec.account_id.name, map_rec.caldav_href,
+                    map_rec.event_id.name,
+                    map_rec.event_id.id,
+                    map_rec.account_id.name,
+                    map_rec.caldav_href,
                 )
-                map_rec.account_id._delete_event(map_rec.caldav_href, etag=map_rec.caldav_etag)
+                map_rec.account_id._delete_event(
+                    map_rec.caldav_href, etag=map_rec.caldav_etag
+                )
             except Exception as ex:
-                _logger.warning('[UNLINK] Direct CalDAV DELETE failed: %s', ex)
+                _logger.warning("[UNLINK] Direct CalDAV DELETE failed: %s", ex)
             map_rec.unlink()
 
         return super().unlink()
 
     def caldav_sync_action(self):
-        """Trigger a CalDAV sync for the current user from the calendar view button.
-
-        Called when the user clicks the "CalDAV Sync" button in the calendar view
-        control panel. Delegates to ``caldav.sync.service.action_sync_current_user``.
-
-        :return: Client notification action.
-        :rtype: dict
-        """
-        return self.env['caldav.sync.service'].action_sync_current_user()
+        """Trigger a CalDAV sync for the current user from the calendar view button."""
+        return self.env["caldav.sync.service"].action_sync_current_user()

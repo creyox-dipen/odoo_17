@@ -1,4 +1,4 @@
-17.0.0.0(Date: 06th April,2026)
+18.0.0.0(Date: 24th April,2026)
 -------------------------------
 
- Migrated in version 17.0.0.0
+- Synchronize events with Google, Zoho, iCloud, Radicale, and Nextcloud servers.

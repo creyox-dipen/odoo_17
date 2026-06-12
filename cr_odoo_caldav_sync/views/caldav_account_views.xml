@@ -9,7 +9,6 @@
         <field name="model">caldav.account</field>
         <field name="arch" type="xml">
             <form string="CalDAV Account">
-                <field name="google_refresh_token" invisible="1"/>
                 <header>
                     <button name="action_test_connection"
                             string="Test Connection"
@@ -31,6 +30,7 @@
                             help="Click to sign in with your Google Account and authorize calendar sync."/>
                 </header>
                 <sheet>
+                    <field name="google_refresh_token" invisible="1"/>
                     <div class="oe_button_box" name="button_box">
                         <button name="action_view_scheduled_action"
                                 type="object"
@@ -65,6 +65,14 @@
                         <span>Google Calendar is <b>not yet authorized</b>. Click <b>Authorize with Google</b> to connect.</span>
                     </div>
 
+                    <!-- Live Sync Progress Banner -->
+                    <div class="alert alert-info d-flex align-items-center mb-3"
+                         invisible="sync_status != 'syncing'">
+                        <i class="fa fa-refresh fa-spin me-2"/>
+                        <span>Calendar synchronization in progress: </span>
+                        <field name="sync_progress" readonly="1" class="ms-1 fw-bold"/>
+                    </div>
+
                     <group>
                         <group string="Connection">
                             <field name="server_type"
@@ -85,6 +93,14 @@
                                    placeholder="https://apidata.googleusercontent.com/caldav/v2/you@gmail.com/events/"
                                    widget="url"
                                    invisible="server_type != 'google'"/>
+                            <field name="google_client_id"
+                                   invisible="server_type != 'google'"/>
+                            <field name="google_client_secret"
+                                   password="True"
+                                   invisible="server_type != 'google'"/>
+                            <div class="text-muted mt8" invisible="server_type != 'google'">
+                                Authorized Redirect URI: <code class="bg-light">/caldav/google/callback</code>
+                            </div>
                             <field name="user_id"/>
                         </group>
                         <group string="Sync Options">
@@ -94,18 +110,17 @@
                         </group>
                     </group>
                     <group string="Sync Status" name="sync_status">
+                        <field name="sync_status"/>
+                        <field name="sync_progress" invisible="sync_status != 'syncing'"/>
                         <field name="last_sync" readonly="1"/>
-                        <field name="last_ctag" readonly="1" string="Last CTag (internal)"/>
+                        <field name="last_ctag" readonly="1" string="Last CTag (internal)" invisible="1"/>
                         <field name="active"/>
                     </group>
                     <notebook>
                         <page string="Event Mappings" name="event_mappings">
                             <field name="event_map_ids" readonly="1">
                                 <tree>
-                                    <field name="caldav_uid"/>
-                                    <field name="caldav_href"/>
-                                    <field name="caldav_etag"/>
-                                    <field name="event_id"/>
+                                    <field name="event_id" string="Event Name"/>
                                     <field name="last_odoo_write"/>
                                 </tree>
                             </field>
@@ -118,10 +133,10 @@
     </record>
 
     <!-- ============================================================
-         tree view: caldav.account
+         List view: caldav.account
     ============================================================ -->
-    <record id="view_caldav_account_tree" model="ir.ui.view">
-        <field name="name">caldav.account.tree</field>
+    <record id="view_caldav_account_list" model="ir.ui.view">
+        <field name="name">caldav.account.list</field>
         <field name="model">caldav.account</field>
         <field name="arch" type="xml">
             <tree string="CalDAV Accounts">
