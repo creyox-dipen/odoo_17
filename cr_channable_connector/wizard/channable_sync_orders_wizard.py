@@ -828,7 +828,7 @@ class ChannableSyncOrdersWizard(models.TransientModel):
                         'name': carrier.name or _('Shipping'),
                         'product_uom_qty': 1,
                         'price_unit': shipping_cost,
-                        'tax_ids': [(5, 0, 0)], 
+                        'tax_id': [(5, 0, 0)], 
                     }))
 
             # ── Order note / memo ─────────────────────────────────────────────
