@@ -795,16 +795,16 @@ class ChannableSyncOrdersWizard(models.TransientModel):
                 continue
 
             # ── Resolve Shipping Carrier ──────────────────────────────────────
-            channable_ship_method = (
+            raw_ship_method = (
                 inner_data.get('delivery_request', {}).get('method')
                 or inner_data.get('delivery_request', {}).get('carrier')
                 or inner_data.get('shipping', {}).get('method')
-                or ''
             )
+            channable_ship_method = str(raw_ship_method).strip() if raw_ship_method is not None else 'none'
             _logger.info("[Channable] Mapped shipping method : %s", channable_ship_method)
             carrier = False
             if channable_ship_method:
-                channable_ship_method_clean = str(channable_ship_method).strip().lower()
+                channable_ship_method_clean = channable_ship_method.lower()
                 matching_mapping = marketplace.shipping_mapping_ids.filtered(
                     lambda m: (m.channable_shipping_method or '').strip().lower() == channable_ship_method_clean
                 )
