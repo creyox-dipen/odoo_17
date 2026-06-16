@@ -375,7 +375,7 @@
                     <field name="color"/>
                     <field name="dark_mode"/>
                     <templates>
-                        <t t-name="menu">
+                        <t t-name="kanban-menu">
                             <div class="container-fluid my-channable-menu-container" style="min-width: 180px; padding: 12px;">
                                 <!-- View Section -->
                                 <div class="mb-2 text-start">
@@ -393,9 +393,7 @@
                                 <!-- Color Picker Grid -->
                                 <div class="mb-2 text-start">
                                     <div class="my_menu_header mb-2" style="color: #ced4da !important; font-weight: bold !important; font-size: 0.75rem !important; text-transform: uppercase !important; letter-spacing: 0.8px !important;">Color</div>
-                                    <div t-if="widget.editable" class="o_kanban_card_manage_settings row m-0 g-1">
-                                        <field name="color" widget="kanban_color_picker" class="col-12 p-0"/>
-                                    </div>
+                                    <ul t-if="widget.editable" class="oe_kanban_colorpicker" data-field="color"/>
                                 </div>
                                 
                                 <hr class="my-2" style="border-top: 1px solid #495057 !important; opacity: 1 !important;"/>
@@ -587,14 +585,22 @@
                                 .o_kanban_dashboard .my-kanban-dark-mode .my_stat_divider {
                                     border-left: 1px solid rgba(255, 255, 255, 0.08) !important;
                                 }
-                                .o_kanban_dashboard .my-kanban-dark-mode .o_dropdown_kanban,
-                                .o_kanban_dashboard .my-kanban-dark-mode .o_kanban_manage_toggle_button {
-                                    color: #e9ecef !important;
-                                }
-                                .o_kanban_dashboard .my-kanban-dark-mode .o_dropdown_kanban:hover,
-                                .o_kanban_dashboard .my-kanban-dark-mode .o_kanban_manage_toggle_button:hover {
-                                    color: #bfaeff !important;
-                                }
+                                 .o_kanban_dashboard .my-kanban-dark-mode .o_dropdown_kanban,
+                                 .o_kanban_dashboard .my-kanban-dark-mode .o_kanban_manage_toggle_button,
+                                 .o_kanban_record:has(.my-kanban-dark-mode) .o_dropdown_kanban,
+                                 .o_kanban_record:has(.my-kanban-dark-mode) .o_kanban_manage_toggle_button,
+                                 .oe_kanban_record:has(.my-kanban-dark-mode) .o_dropdown_kanban,
+                                 .oe_kanban_record:has(.my-kanban-dark-mode) .o_kanban_manage_toggle_button {
+                                     color: #ffffff !important;
+                                 }
+                                 .o_kanban_dashboard .my-kanban-dark-mode .o_dropdown_kanban:hover,
+                                 .o_kanban_dashboard .my-kanban-dark-mode .o_kanban_manage_toggle_button:hover,
+                                 .o_kanban_record:has(.my-kanban-dark-mode) .o_dropdown_kanban:hover,
+                                 .o_kanban_record:has(.my-kanban-dark-mode) .o_kanban_manage_toggle_button:hover,
+                                 .oe_kanban_record:has(.my-kanban-dark-mode) .o_dropdown_kanban:hover,
+                                 .oe_kanban_record:has(.my-kanban-dark-mode) .o_kanban_manage_toggle_button:hover {
+                                     color: #bfaeff !important;
+                                 }
                                 .o_kanban_dashboard .my-kanban-dark-mode .o_dashboard_graph {
                                     filter: invert(0.88) hue-rotate(180deg) brightness(1.2) contrast(0.9) !important;
                                     opacity: 0.9;
