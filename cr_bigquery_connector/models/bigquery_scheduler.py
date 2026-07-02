@@ -585,6 +585,14 @@ class BigQueryScheduler(models.Model):
         except Exception:
             table_exists = False
 
+        field_type_map = {}
+        for field_name in query_fields:
+            field = next((f for f in model_fields if f.name == field_name), None)
+            if field:
+                field_type_map[field_name] = field.ttype
+            else:
+                field_type_map[field_name] = None
+
         where_clause = " AND ".join(where_clauses) if where_clauses else "TRUE"
         query = f"SELECT {', '.join(query_fields)} FROM {table} WHERE {where_clause}"
 
@@ -626,17 +634,49 @@ class BigQueryScheduler(models.Model):
                 delete=False, mode="w", newline="", encoding="utf-8"
             )
             writer = csv.DictWriter(
-                temp_file, fieldnames=field_names, extrasaction="ignore"
+                temp_file,
+                fieldnames=field_names,
+                extrasaction="ignore",
+                quoting=csv.QUOTE_NONNUMERIC,  # Quote all non-numeric fields
+                doublequote=True,  # Use "" to escape quotes (CSV standard)
+                lineterminator='\n'  # Explicit line terminator
             )
             writer.writeheader()
             for row in rows:
                 for k, v in row.items():
-                    if isinstance(v, datetime):
-                        row[k] = v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                    elif isinstance(v, date):
-                        row[k] = v.isoformat()
+                    field_type = field_type_map.get(k)
+
+                    # Handle based on field type from schema
+                    if field_type == 'datetime' or isinstance(v, datetime):
+                        row[k] = v.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if v else ""
+                    elif field_type == 'date' or isinstance(v, date):
+                        row[k] = v.isoformat() if v else ""
                     elif v is None:
                         row[k] = ""
+                    elif field_type in ('integer', 'float'):
+                        # Keep numeric types as numbers for QUOTE_NONNUMERIC
+                        row[k] = v if v is not None else 0
+                    elif field_type == 'boolean':
+                        # Convert boolean to int for CSV
+                        row[k] = 1 if v else 0
+                    else:
+                        # For STRING type fields (char, text, html, selection, etc.)
+                        if field_type in ('char', 'text', 'html', 'selection', 'many2one', 'one2many', 'many2many'):
+                            # Convert to string and clean
+                            str_value = str(v) if v is not None else ""
+                            # Remove problematic characters
+                            str_value = str_value.replace('\x00', '')  # Null bytes
+                            str_value = str_value.replace('\r', '')  # Carriage returns
+                            # Keep newlines but they'll be properly quoted
+                            row[k] = str_value
+                        elif isinstance(v, str):
+                            # Fallback for any other string values
+                            str_value = str(v).replace('\x00', '').replace('\r', '')
+                            row[k] = str_value
+                        else:
+                            # For any other types, convert to string
+                            row[k] = str(v) if v is not None else ""
+
                 writer.writerow(row)
             temp_file.close()
 
@@ -651,6 +691,8 @@ class BigQueryScheduler(models.Model):
                 source_format=bigquery.SourceFormat.CSV,
                 skip_leading_rows=1,
                 write_disposition=write_disp,
+                allow_quoted_newlines=True,  # CRITICAL: Allow newlines within quoted fields
+                allow_jagged_rows=False,  # Strict column count checking
             )
 
             with open(temp_file.name, "rb") as source_file:

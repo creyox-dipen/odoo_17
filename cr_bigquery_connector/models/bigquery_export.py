@@ -155,7 +155,6 @@ class BigQueryExport(models.Model):
         return False
 
     def action_export_data(self, id):
-
         record = self.env["cr.big.query.export"].search([("id", "=", id)])
         if not record:
             return
@@ -187,6 +186,14 @@ class BigQueryExport(models.Model):
             field_names = query_fields
             if "id" not in field_names:
                 field_names.insert(0, "id")
+
+            field_type_map = {}
+            for field_name in query_fields:
+                field = next((f for f in model_fields if f.name == field_name), None)
+                if field:
+                    field_type_map[field_name] = field.ttype
+                else:
+                    field_type_map[field_name] = None
 
             where_clauses = []
             params = []
@@ -238,17 +245,47 @@ class BigQueryExport(models.Model):
                         delete=False, mode="w", newline="", encoding="utf-8"
                     )
                     writer = csv.DictWriter(
-                        temp_file, fieldnames=field_names, extrasaction="ignore"
+                        temp_file,
+                        fieldnames=field_names,
+                        extrasaction="ignore",
+                        quoting=csv.QUOTE_NONNUMERIC,
+                        doublequote=True,
+                        lineterminator='\n'
                     )
                     writer.writeheader()
                     for row in rows:
                         for k, v in row.items():
-                            if isinstance(v, datetime):
-                                row[k] = v.strftime("%Y-%m-%dT%H:%M:%S.%fZ")
-                            elif isinstance(v, date):
-                                row[k] = v.isoformat()
+                            field_type = field_type_map.get(k)
+
+                            # Handle based on field type from schema
+                            if field_type == 'datetime' or isinstance(v, datetime):
+                                row[k] = v.strftime("%Y-%m-%dT%H:%M:%S.%fZ") if v else ""
+                            elif field_type == 'date' or isinstance(v, date):
+                                row[k] = v.isoformat() if v else ""
                             elif v is None:
                                 row[k] = ""
+                            elif field_type in ('integer', 'float'):
+                                # Keep numeric types as numbers for QUOTE_NONNUMERIC
+                                row[k] = v if v is not None else 0
+                            elif field_type == 'boolean':
+                                # Convert boolean to int for CSV
+                                row[k] = 1 if v else 0
+                            else:
+                                # For STRING type fields (char, text, html, selection, etc.)
+                                if field_type in ('char', 'text', 'html', 'selection', 'many2one', 'one2many',
+                                                  'many2many'):
+                                    str_value = str(v) if v is not None else ""
+                                    str_value = str_value.replace('\x00', '')  # Null bytes
+                                    str_value = str_value.replace('\r', '')  # Carriage returns
+                                    row[k] = str_value
+                                elif isinstance(v, str):
+                                    # Fallback for any other string values
+                                    str_value = str(v).replace('\x00', '').replace('\r', '')
+                                    row[k] = str_value
+                                else:
+                                    # For any other types, convert to string
+                                    row[k] = str(v) if v is not None else ""
+
                         writer.writerow(row)
                     temp_file.close()
 
@@ -263,6 +300,8 @@ class BigQueryExport(models.Model):
                         source_format=bigquery.SourceFormat.CSV,
                         skip_leading_rows=1,
                         write_disposition=write_disp,
+                        allow_quoted_newlines=True,  # CRITICAL: Allow newlines within quoted fields
+                        allow_jagged_rows=False,  # Strict column count checking
                     )
                     with open(temp_file.name, "rb") as source_file:
 
