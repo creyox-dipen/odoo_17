@@ -29,6 +29,20 @@ class AccountMove(models.Model):
         string="Adjustments", help="Adjustment credit notes stored as JSON"
     )
 
+    def _sequence_matches_date(self):
+        """Override to bypass Odoo's sequence validation for Chargebee invoices."""
+        self.ensure_one()
+        if self.chargebee_id:
+            return True
+        return super()._sequence_matches_date()
+
+    def _must_check_constrains_date_sequence(self):
+        """Override to bypass sequence constraints if this is a Chargebee invoice."""
+        self.ensure_one()
+        if self.chargebee_id:
+            return False
+        return super()._must_check_constrains_date_sequence()
+
     def convert_timestamp_to_datetime(self, timestamp):
         """Convert a timestamp to a datetime object."""
         if timestamp:
@@ -313,6 +327,7 @@ class AccountMove(models.Model):
                     .sudo()
                     .create(
                         {
+                            "name": credit_note.id,
                             "move_type": "out_refund",
                             "partner_id": self._get_or_create_partner(credit_note).id,
                             "chargebee_id": credit_note.id,
@@ -423,6 +438,7 @@ class AccountMove(models.Model):
                     # Create credit note in Odoo
                     new_cn = self.env["account.move"].create(
                         {
+                            "name": credit_note.id,
                             "move_type": "out_refund",
                             "partner_id": invoice.partner_id.id,
                             "chargebee_id": credit_note.id,
@@ -475,6 +491,7 @@ class AccountMove(models.Model):
             invoices = chargebee.Invoice.list({"limit": 100})
             for inv_data in invoices:
                 invoice = inv_data.invoice
+                _logger.info("Chargebee Invoice Response: %s", invoice)
 
                 # skipping subscription invoice
                 # if invoice.subscription_id:
@@ -589,6 +606,7 @@ class AccountMove(models.Model):
 
                 # Prepare invoice values
                 vals = {
+                    "name": invoice.id,
                     "move_type": "out_invoice",
                     "invoice_date": self.convert_timestamp_to_datetime(invoice.date),
                     "partner_id": self._get_or_create_partner(invoice).id,
@@ -922,6 +940,7 @@ class AccountMove(models.Model):
 
                     # Prepare invoice values
                     vals = {
+                        "name": subscription.id,
                         "move_type": "out_invoice",
                         "invoice_date": self.convert_timestamp_to_datetime(
                             subscription.started_at
@@ -1117,6 +1136,7 @@ class AccountMove(models.Model):
 
             # Prepare invoice values
             invoice_vals = {
+                'name': invoice_id,
                 'move_type': 'out_invoice',
                 'invoice_date': self.convert_timestamp_to_datetime(invoice_data.get('date')),
                 'partner_id': partner.id,
