@@ -138,6 +138,7 @@ class ResPartner(models.Model):
                     "company_name": getattr(chargebee_customer, "company", None),
                     "chargebee_customer_id": chargebee_customer.id,
                     "company_id": customer_company.id,
+                    "is_company": True,
                 }
 
                 # Update existing or create new

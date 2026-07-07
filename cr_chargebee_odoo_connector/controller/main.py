@@ -7,6 +7,7 @@ import logging
 import json
 import hmac
 import hashlib
+import chargebee
 
 _logger = logging.getLogger(__name__)
 
@@ -60,10 +61,15 @@ class ChargebeeWebhookController(http.Controller):
 
             _logger.info(f"Chargebee webhook received: {event_type}")
 
-            # Process only subscription invoice related events
+            # Process webhook events
             if event_type in ['invoice_generated', 'payment_succeeded', 'invoice_updated']:
                 self._process_invoice_webhook(event_type, content)
-
+            elif event_type in ['customer_created', 'customer_changed']:
+                self._process_customer_webhook(event_type, content)
+            elif event_type in ['item_created', 'item_updated']:
+                self._process_item_webhook(event_type, content)
+            elif event_type in ['item_family_created', 'item_family_updated']:
+                self._process_item_family_webhook(event_type, content)
             else:
                 _logger.info(f"Chargebee webhook: Event type '{event_type}' not handled")
                 return
@@ -251,4 +257,157 @@ class ChargebeeWebhookController(http.Controller):
 
         except Exception as e:
             _logger.error(f"Error handling invoice_updated: {str(e)}", exc_info=True)
+            return {"status": "error", "message": str(e)}
+
+    def _process_customer_webhook(self, event_type, content):
+        """Process customer webhook events to create/update res.partner records."""
+        try:
+            customer_data = content.get('customer')
+            if not customer_data:
+                _logger.info("No customer data found in webhook payload")
+                return {"status": "error", "message": "No customer data"}
+
+            customer_id = customer_data.get('id')
+            first_name = customer_data.get('first_name', '')
+            last_name = customer_data.get('last_name', '')
+            email = customer_data.get('email')
+            phone = customer_data.get('phone')
+            company_name = customer_data.get('company')
+            business_entity_id = customer_data.get('business_entity_id')
+
+            customer_company = request.env['res.company'].sudo().get_or_create_company_from_chargebee(business_entity_id)
+
+            ResPartner = request.env['res.partner'].sudo()
+            existing_partner = ResPartner.search([
+                ('chargebee_customer_id', '=', customer_id),
+                ('company_id', '=', customer_company.id)
+            ], limit=1)
+
+            partner_name = f"{first_name} {last_name}".strip() or email or customer_id
+            partner_vals = {
+                'name': partner_name,
+                'email': email,
+                'phone': phone,
+                'company_name': company_name,
+                'chargebee_customer_id': customer_id,
+                'company_id': customer_company.id,
+                'is_company': True,
+            }
+
+            if existing_partner:
+                existing_partner.write(partner_vals)
+                _logger.info("Successfully updated Customer %s from webhook", partner_name)
+            else:
+                ResPartner.create(partner_vals)
+                _logger.info("Successfully created Customer %s from webhook", partner_name)
+
+            return {"status": "success"}
+        except Exception as e:
+            _logger.info("Error processing customer webhook: %s", str(e))
+            return {"status": "error", "message": str(e)}
+
+    def _process_item_webhook(self, event_type, content):
+        """Process item webhook events to create/update product.template records."""
+        try:
+            item_data = content.get('item')
+            if not item_data:
+                _logger.info("No item data found in webhook payload")
+                return {"status": "error", "message": "No item data"}
+                
+            item_id = item_data.get('id')
+            item_name = item_data.get('external_name') or item_data.get('name')
+            item_family_id = item_data.get('item_family_id')
+            item_description = item_data.get('description', '')
+
+            # Fetch config for API client
+            config = request.env['chargebee.configuration'].sudo().search([], limit=1)
+            price = 0.0
+            currency = 'USD'
+            if config and config.api_key and config.site_name:
+                chargebee.configure(config.api_key, config.site_name)
+                try:
+                    item_prices = chargebee.ItemPrice.list({"item_id[is]": item_id, "limit": 1})
+                    if item_prices:
+                        item_price_data = item_prices[0].item_price
+                        price = item_price_data.price / 100 if item_price_data.price else 0.0
+                        currency = item_price_data.currency_code or 'USD'
+                except Exception as e:
+                    _logger.info("Could not fetch item price for item %s: %s", item_id, str(e))
+
+            # Find associated family
+            family = request.env['chargebee.item.family'].sudo().search([('chargebee_id', '=', item_family_id)], limit=1)
+
+            # Get or create category
+            category = request.env['product.category'].sudo().search([('id', '=', family.id)], limit=1) if family else False
+            if not category:
+                category = request.env['product.category'].sudo().create({
+                    'name': family.name if family else 'Default Category'
+                })
+
+            ProductTemplate = request.env['product.template'].sudo()
+            existing_product = ProductTemplate.search([('default_code', '=', item_id)], limit=1)
+
+            vals = {
+                'name': item_name,
+                'list_price': price,
+                'default_code': item_id,
+                'description_sale': item_description or '',
+                'description': item_description or '',
+                'categ_id': category.id,
+                'currency_id': request.env['res.currency'].sudo().search([('name', '=', currency)], limit=1).id,
+                'company_id': False,
+                'chargebee_id': item_id,
+                'chargebee_created': True,
+                'item_family_id': family.id if family else False,
+                'taxes_id': [(5, 0, 0)],
+                'supplier_taxes_id': [(5, 0, 0)],
+            }
+
+            if existing_product:
+                existing_product.write(vals)
+                _logger.info("Successfully updated Product %s from webhook", item_name)
+            else:
+                vals['type'] = 'consu'
+                vals['detailed_type'] = 'consu'
+                new_product = ProductTemplate.create(vals)
+                new_product.write({
+                    'taxes_id': [(5, 0, 0)],
+                    'supplier_taxes_id': [(5, 0, 0)]
+                })
+                _logger.info("Successfully created Product %s from webhook", item_name)
+
+            return {"status": "success"}
+        except Exception as e:
+            _logger.info("Error processing item webhook: %s", str(e))
+            return {"status": "error", "message": str(e)}
+
+    def _process_item_family_webhook(self, event_type, content):
+        """Process item family webhook events to create/update chargebee.item.family records."""
+        try:
+            family_data = content.get('item_family')
+            if not family_data:
+                _logger.info("No item_family data found in webhook payload")
+                return {"status": "error", "message": "No item_family data"}
+
+            family_id = family_data.get('id')
+            family_name = family_data.get('name')
+
+            ChargebeeItemFamily = request.env['chargebee.item.family'].sudo()
+            existing_family = ChargebeeItemFamily.search([('chargebee_id', '=', family_id)], limit=1)
+
+            vals = {
+                'name': family_name,
+                'chargebee_id': family_id,
+            }
+
+            if existing_family:
+                existing_family.write(vals)
+                _logger.info("Successfully updated Item Family %s from webhook", family_name)
+            else:
+                ChargebeeItemFamily.create(vals)
+                _logger.info("Successfully created Item Family %s from webhook", family_name)
+
+            return {"status": "success"}
+        except Exception as e:
+            _logger.info("Error processing item family webhook: %s", str(e))
             return {"status": "error", "message": str(e)}

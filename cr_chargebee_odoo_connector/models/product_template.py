@@ -78,7 +78,7 @@ class ProductTemplate(models.Model):
                     # Update the existing product in base model
                     existing_product.write(
                         {
-                            "name": item.name,
+                            "name": getattr(item, 'external_name', None) or item.name,
                             "list_price": price if price else 0.0,
                             "default_code": item.id,
                             "description_sale": item.description or "",
@@ -91,13 +91,15 @@ class ProductTemplate(models.Model):
                             "chargebee_id": item.id,
                             "chargebee_created": True,
                             "item_family_id": family.id if family else False,
+                            "taxes_id": [(5, 0, 0)],
+                            "supplier_taxes_id": [(5, 0, 0)],
                         }
                     )
                 else:
                     # Create a new product record in base model
                     self.env["product.template"].create(
                         {
-                            "name": item.name,
+                            "name": getattr(item, 'external_name', None) or item.name,
                             "list_price": price if price else 0.0,
                             "default_code": item.id,
                             "description_sale": item.description or "",
@@ -112,6 +114,8 @@ class ProductTemplate(models.Model):
                             "detailed_type": "consu",
                             "chargebee_created": True,
                             "item_family_id": family.id if family else False,
+                            "taxes_id": [(5, 0, 0)],
+                            "supplier_taxes_id": [(5, 0, 0)],
                         }
                     )
                 total_records += 1
