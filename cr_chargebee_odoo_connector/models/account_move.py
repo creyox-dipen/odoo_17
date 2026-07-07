@@ -9,6 +9,8 @@ import logging
 import json
 import pytz
 from dateutil.relativedelta import relativedelta
+import requests
+import base64
 
 _logger = logging.getLogger(__name__)
 
@@ -42,6 +44,70 @@ class AccountMove(models.Model):
         if self.chargebee_id:
             return False
         return super()._must_check_constrains_date_sequence()
+
+    def _fetch_and_attach_chargebee_pdf(self):
+        """Fetch the invoice PDF from Chargebee and attach it to the Odoo invoice and chatter."""
+        self.ensure_one()
+        if not self.chargebee_id:
+            _logger.info("Skipping PDF download: Invoice has no chargebee_id")
+            return
+
+        # Check if the PDF is already attached to avoid duplication
+        attachment_name = f"Chargebee_{self.chargebee_id}.pdf"
+        existing_attachment = self.env['ir.attachment'].sudo().search([
+            ('res_model', '=', 'account.move'),
+            ('res_id', '=', self.id),
+            ('name', '=', attachment_name)
+        ], limit=1)
+
+        if existing_attachment:
+            _logger.info("PDF attachment %s already exists for invoice %s", attachment_name, self.name)
+            return
+
+        # Load Chargebee config
+        chargebee_config = self.env["chargebee.configuration"].search([], limit=1)
+        if not chargebee_config or not chargebee_config.api_key or not chargebee_config.site_name:
+            _logger.info("Skipping PDF download: Chargebee configuration is incomplete")
+            return
+
+        # Configure Chargebee
+        chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
+
+        try:
+            # 1. Fetch PDF URL from Chargebee (differentiate invoice vs credit note)
+            if self.move_type in ('out_refund', 'in_refund'):
+                pdf_data = chargebee.CreditNote.pdf(self.chargebee_id)
+            else:
+                pdf_data = chargebee.Invoice.pdf(self.chargebee_id)
+            download_url = pdf_data.download.download_url
+
+            # 2. Download the PDF content
+            _logger.info("Downloading Chargebee PDF from: %s", download_url)
+            response = requests.get(download_url, timeout=30)
+            if response.status_code == 200:
+                pdf_content = base64.b64encode(response.content)
+
+                # 3. Create ir.attachment in Odoo
+                attachment = self.env['ir.attachment'].sudo().create({
+                    'name': attachment_name,
+                    'type': 'binary',
+                    'datas': pdf_content,
+                    'res_model': 'account.move',
+                    'res_id': self.id,
+                    'mimetype': 'application/pdf',
+                })
+
+                # 4. Post attachment to invoice chatter
+                self.message_post(
+                    body=_("Synced Chargebee Invoice PDF"),
+                    attachment_ids=[attachment.id]
+                )
+                _logger.info("Successfully fetched and attached Chargebee PDF for invoice %s", self.name)
+            else:
+                _logger.info("Failed to download PDF from Chargebee. HTTP Status: %s", response.status_code)
+
+        except Exception as e:
+            _logger.info("Error fetching PDF from Chargebee for invoice %s: %s", self.name, str(e))
 
     def convert_timestamp_to_datetime(self, timestamp):
         """Convert a timestamp to a datetime object."""
@@ -288,6 +354,8 @@ class AccountMove(models.Model):
                     _logger.info(
                         f"Credit note {existing_cn.name} already exists. Skipping."
                     )
+                    existing_cn._fetch_and_attach_chargebee_pdf()
+                    self.env.cr.commit()
                     continue
 
                 # Prepare credit note lines
@@ -340,6 +408,9 @@ class AccountMove(models.Model):
                         }
                     )
                 )
+                if new_cn:
+                    new_cn._fetch_and_attach_chargebee_pdf()
+                    self.env.cr.commit()
 
             _logger.info("Credit note sync completed successfully.")
         except Exception as e:
@@ -450,10 +521,15 @@ class AccountMove(models.Model):
                             "journal_id": cn_journal.id,
                         }
                     )
+                    if new_cn:
+                        new_cn._fetch_and_attach_chargebee_pdf()
+                        self.env.cr.commit()
                 else:
                     _logger.info(
                         f"Credit note {credit_note.id} already exists for invoice {invoice.chargebee_id}."
                     )
+                    existing_cn._fetch_and_attach_chargebee_pdf()
+                    self.env.cr.commit()
         except chargebee.APIError as e:
             _logger.error(
                 f"Error syncing credit notes for invoice {invoice.chargebee_id}: {e.json_obj}"
@@ -517,6 +593,8 @@ class AccountMove(models.Model):
                     _logger.info(
                         f"Skipping reconciled invoice: {existing_invoice.name}"
                     )
+                    existing_invoice._fetch_and_attach_chargebee_pdf()
+                    self.env.cr.commit()
                     continue
 
                 # Prepare line items and create products if needed
@@ -621,7 +699,7 @@ class AccountMove(models.Model):
                 if existing_invoice and existing_invoice.state != "cancel":
                     try:
                         existing_invoice.write(vals)
-                        # odoo_invoice = existing_invoice
+                        odoo_invoice = existing_invoice
                     except Exception as e:
                         _logger.warning(
                             f"Could not update reconciled invoice {existing_invoice.name}: {e}"
@@ -639,6 +717,11 @@ class AccountMove(models.Model):
                     self._register_chargebee_payment(
                         odoo_invoice, invoice.linked_payments
                     )
+                    self.env.cr.commit()
+
+                # Fetch and attach PDF from Chargebee
+                if odoo_invoice:
+                    odoo_invoice._fetch_and_attach_chargebee_pdf()
                     self.env.cr.commit()
             # Log successful data processing
             self.env["cr.data.processing.log"].sudo()._log_data_processing(
@@ -846,6 +929,8 @@ class AccountMove(models.Model):
                     _logger.info(
                         f"Skipping posted subscription invoice: {existing_invoice.name}"
                     )
+                    existing_invoice._fetch_and_attach_chargebee_pdf()
+                    self.env.cr.commit()
                     continue
 
                 quotes = chargebee.Quote.list({"subscription_id[is]": subscription.id})
@@ -955,9 +1040,11 @@ class AccountMove(models.Model):
                         "journal_id": invoice_journal.id,
                     }
                     # Create or update invoice
+                    odoo_invoice = False
                     if existing_invoice:
                         try:
                             existing_invoice.write(vals)
+                            odoo_invoice = existing_invoice
                         except Exception as e:
                             _logger.warning(
                                 f"Could not update posted subscription invoice {existing_invoice.name}: {e}"
@@ -966,6 +1053,9 @@ class AccountMove(models.Model):
                         odoo_invoice = self.sudo().create(vals)
                         super(AccountMove, odoo_invoice).action_post()
                     self.env.cr.commit()
+                    if odoo_invoice:
+                        odoo_invoice._fetch_and_attach_chargebee_pdf()
+                        self.env.cr.commit()
                     total_records += 1
 
             # Log successful data processing
@@ -1161,6 +1251,11 @@ class AccountMove(models.Model):
                 _logger.info(f"Created new invoice: {odoo_invoice.name}")
 
             self.env.cr.commit()
+
+            # Fetch and attach PDF from Chargebee
+            if odoo_invoice:
+                odoo_invoice._fetch_and_attach_chargebee_pdf()
+                self.env.cr.commit()
 
             # Handle payments if invoice is paid
             if invoice_data.get('status') == 'paid':
