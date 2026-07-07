@@ -620,11 +620,12 @@ class AccountMove(models.Model):
                                                   / 100,  # Default price from Chargebee
                                     "type": "service",  # Or 'consu'/'product' based on your needs
                                     # "company_id": invoice_company.id, keep it general
-                                    "taxes_id": [(6, 0, [])],
-                                    "supplier_taxes_id": [(6, 0, [])],
+                                    "taxes_id": [(5, 0, 0)],
+                                    "supplier_taxes_id": [(5, 0, 0)],
                                 }
                             )
                         )
+                        product.product_tmpl_id._apply_chargebee_configured_taxes()
                         _logger.info(
                             f"Created product {product.name} with Chargebee ID {item.id}."
                         )
@@ -851,9 +852,11 @@ class AccountMove(models.Model):
                 # Register the payment with proper context - Odoo 17 syntax
                 payment_register = (
                     self.env["account.payment.register"]
+                    .with_company(odoo_invoice.company_id)
                     .with_context(
                         active_model="account.move",
                         active_ids=odoo_invoice.ids,
+                        allowed_company_ids=[odoo_invoice.company_id.id],
                     )
                     .sudo()
                     .create(payment_vals)
@@ -962,10 +965,12 @@ class AccountMove(models.Model):
                                                       / 100,  # Assuming smallest currency unit (e.g., paise/cents)
                                         "type": "service",  # Or 'consu'/'product' based on your needs
                                         "company_id": subs_company.id,
-                                        "taxes_id": [(6, 0, [])],
+                                        "taxes_id": [(5, 0, 0)],
+                                        "supplier_taxes_id": [(5, 0, 0)],
                                     }
                                 )
                             )
+                            product.product_tmpl_id._apply_chargebee_configured_taxes()
                             _logger.info(
                                 f"Created product {product.name} with Chargebee Item Price ID {item.item_price_id}."
                             )
@@ -1105,6 +1110,7 @@ class AccountMove(models.Model):
                         "street": getattr(billing_address, "street", ""),
                         "city": getattr(billing_address, "city", ""),
                         "zip": getattr(billing_address, "zip", ""),
+                        "is_company": True,
                         "country_id": self.env["res.country"]
                         .sudo()
                         .search(
@@ -1136,6 +1142,7 @@ class AccountMove(models.Model):
                     "street": getattr(billing_address, "street", ""),
                     "city": getattr(billing_address, "city", ""),
                     "zip": getattr(billing_address, "zip", ""),
+                    "is_company": True,
                     "country_id": self.env["res.country"]
                     .sudo()
                     .search(
@@ -1264,6 +1271,29 @@ class AccountMove(models.Model):
             return odoo_invoice
 
         except Exception as e:
+            # Handle unique constraint race conditions gracefully
+            err_msg = str(e)
+            if "unique constraint" in err_msg or "duplicate key" in err_msg or "account_move_unique_name" in err_msg:
+                _logger.info("Detected unique constraint race condition for invoice %s. Rolling back and retrying...", invoice_id)
+                self.env.cr.rollback()
+                import time
+                time.sleep(3.0)
+                # Search again after the other transaction has committed
+                existing = self.sudo().search([
+                    ('chargebee_id', '=', invoice_id),
+                    ('company_id', '=', invoice_company.id)
+                ], limit=1)
+                if existing:
+                    _logger.info("Found invoice %s after retry, returning it.", existing.name)
+                    # Check if we need to process payment on it
+                    if invoice_data.get('status') == 'paid':
+                        try:
+                            # We need to process payment on it now
+                            self._process_webhook_payments(existing, invoice_data, webhook_content)
+                        except Exception as pay_err:
+                            _logger.error("Failed to process payment on existing invoice %s: %s", existing.name, str(pay_err))
+                    return existing
+
             _logger.error(f"Error syncing invoice from webhook: {str(e)}", exc_info=True)
             self.env.cr.rollback()
             raise
@@ -1365,9 +1395,10 @@ class AccountMove(models.Model):
                 'list_price': item_data.get('unit_amount', 0) / 100,
                 'type': 'service',
                 'company_id': False,
-                'taxes_id': [(6, 0, [])],
-                'supplier_taxes_id': [(6, 0, [])],
+                'taxes_id': [(5, 0, 0)],
+                'supplier_taxes_id': [(5, 0, 0)],
             })
+            product.product_tmpl_id._apply_chargebee_configured_taxes()
             _logger.info(f"Created product {product.name} with item_id {item_id}")
 
         return product
@@ -1418,6 +1449,7 @@ class AccountMove(models.Model):
                     'street2': billing_address.get('line2', ''),
                     'city': billing_address.get('city', ''),
                     'zip': billing_address.get('zip', ''),
+                    'is_company': True,
                     'state_id': False,  # Add state mapping if needed
                     'country_id': self.env['res.country'].sudo().search([
                         ('code', '=', billing_address.get('country', ''))
@@ -1430,6 +1462,7 @@ class AccountMove(models.Model):
             partner = self.env['res.partner'].sudo().create({
                 'name': 'Chargebee Customer',
                 'chargebee_customer_id': customer_id,
+                'is_company': True,
                 'company_id': company.id,
             })
 

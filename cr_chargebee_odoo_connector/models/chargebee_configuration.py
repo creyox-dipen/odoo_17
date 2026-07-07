@@ -58,6 +58,11 @@ class ChargebeeConfiguration(models.Model):
     journal_config_ids = fields.One2many(
         comodel_name="journal.configuration", inverse_name="cb_config_id"
     )
+    tax_config_ids = fields.One2many(
+        comodel_name="chargebee.tax.configuration",
+        inverse_name="cb_config_id",
+        string="Tax Configurations",
+    )
 
     # webhook fields
     webhook_url = fields.Char(

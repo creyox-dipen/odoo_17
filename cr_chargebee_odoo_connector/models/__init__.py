@@ -12,3 +12,4 @@ from . import account_tax
 from . import cr_logs
 from . import res_currency
 from . import journal_configuration
+from . import chargebee_tax_configuration

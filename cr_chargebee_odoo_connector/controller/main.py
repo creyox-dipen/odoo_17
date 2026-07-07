@@ -365,16 +365,20 @@ class ChargebeeWebhookController(http.Controller):
 
             if existing_product:
                 existing_product.write(vals)
+                product = existing_product
                 _logger.info("Successfully updated Product %s from webhook", item_name)
             else:
                 vals['type'] = 'consu'
                 vals['detailed_type'] = 'consu'
-                new_product = ProductTemplate.create(vals)
-                new_product.write({
+                product = ProductTemplate.create(vals)
+                product.write({
                     'taxes_id': [(5, 0, 0)],
                     'supplier_taxes_id': [(5, 0, 0)]
                 })
                 _logger.info("Successfully created Product %s from webhook", item_name)
+
+            # Apply company-wise configured taxes
+            product._apply_chargebee_configured_taxes()
 
             return {"status": "success"}
         except Exception as e:

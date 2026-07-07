@@ -202,6 +202,15 @@
                             </field>
                         </page>
 
+                        <page string="Tax Configuration">
+                            <field name="tax_config_ids">
+                                <tree editable="bottom">
+                                    <field name="company_id"/>
+                                    <field name="tax_id"/>
+                                </tree>
+                            </field>
+                        </page>
+
                         <!--  webhook configuration  -->
                         <page string="Webhook Configuration" name="webhook_config">
                             <group>

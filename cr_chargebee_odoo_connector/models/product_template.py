@@ -95,9 +95,10 @@ class ProductTemplate(models.Model):
                             "supplier_taxes_id": [(5, 0, 0)],
                         }
                     )
+                    product = existing_product
                 else:
                     # Create a new product record in base model
-                    self.env["product.template"].create(
+                    product = self.env["product.template"].create(
                         {
                             "name": getattr(item, 'external_name', None) or item.name,
                             "list_price": price if price else 0.0,
@@ -118,6 +119,10 @@ class ProductTemplate(models.Model):
                             "supplier_taxes_id": [(5, 0, 0)],
                         }
                     )
+
+                # Apply company-wise configured taxes
+                product._apply_chargebee_configured_taxes()
+
                 total_records += 1
                 # Log successful data processing
             self.env["cr.data.processing.log"].sudo()._log_data_processing(
@@ -278,3 +283,12 @@ class ProductTemplate(models.Model):
                 context="items",  # Specify context for this page
             )
             raise ValueError(_("Error creating item in Chargebee: %s") % str(e))
+
+    def _apply_chargebee_configured_taxes(self):
+        """Apply company-wise configured taxes to the product template."""
+        tax_configs = self.env["chargebee.tax.configuration"].sudo().search([])
+        tax_ids = tax_configs.mapped('tax_id').ids
+        if tax_ids:
+            self.sudo().write({
+                'taxes_id': [(6, 0, tax_ids)]
+            })
