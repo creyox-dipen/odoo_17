@@ -70,8 +70,9 @@ class ProductTemplate(models.Model):
                     )
 
                 # Check if the product already exists in Odoo's base model `product.template`
+                item_price_id = item_price_data.id if item_prices else item.id
                 existing_product = self.env["product.template"].search(
-                    [("default_code", "=", item.id)], limit=1
+                    [("default_code", "=", item_price_id)], limit=1
                 )
 
                 if existing_product:
@@ -80,7 +81,7 @@ class ProductTemplate(models.Model):
                         {
                             "name": getattr(item, 'external_name', None) or item.name,
                             "list_price": price if price else 0.0,
-                            "default_code": item.id,
+                            "default_code": item_price_id,
                             "description_sale": item.description or "",
                             "description": item.description or "",
                             "categ_id": category.id,
@@ -88,7 +89,7 @@ class ProductTemplate(models.Model):
                             .search([("name", "=", currency)], limit=1)
                             .id,
                             "company_id": False,  # item available to all company
-                            "chargebee_id": item.id,
+                            "chargebee_id": item_price_id,
                             "chargebee_created": True,
                             "item_family_id": family.id if family else False,
                             "taxes_id": [(5, 0, 0)],
@@ -102,7 +103,7 @@ class ProductTemplate(models.Model):
                         {
                             "name": getattr(item, 'external_name', None) or item.name,
                             "list_price": price if price else 0.0,
-                            "default_code": item.id,
+                            "default_code": item_price_id,
                             "description_sale": item.description or "",
                             "description": item.description or "",
                             "categ_id": category.id,
@@ -111,7 +112,7 @@ class ProductTemplate(models.Model):
                             .id,
                             "company_id": False,  # item available to all company
                             "type": "consu",  # Set product type, can be 'consu' or 'service' based on your requirement
-                            "chargebee_id": item.id,
+                            "chargebee_id": item_price_id,
                             "detailed_type": "consu",
                             "chargebee_created": True,
                             "item_family_id": family.id if family else False,

@@ -601,9 +601,10 @@ class AccountMove(models.Model):
                 line_items = []
                 for item in getattr(invoice, "line_items", []):
                     # Check if the product exists
+                    entity_id = getattr(item, 'entity_id', None) or item.id
                     product = self.env["product.product"].search(
                         [
-                            ("default_code", "=", item.id),
+                            ("default_code", "=", entity_id),
                         ],
                         limit=1,
                     )
@@ -615,7 +616,7 @@ class AccountMove(models.Model):
                             .create(
                                 {
                                     "name": item.description or "Chargebee Product",
-                                    "default_code": item.id,
+                                    "default_code": entity_id,
                                     "list_price": item.unit_amount
                                                   / 100,  # Default price from Chargebee
                                     "type": "service",  # Or 'consu'/'product' based on your needs
@@ -627,7 +628,7 @@ class AccountMove(models.Model):
                         )
                         product.product_tmpl_id._apply_chargebee_configured_taxes()
                         _logger.info(
-                            f"Created product {product.name} with Chargebee ID {item.id}."
+                            f"Created product {product.name} with Chargebee ID {entity_id}."
                         )
 
                     date_from = getattr(item, 'date_from', False)
@@ -1349,49 +1350,21 @@ class AccountMove(models.Model):
             product.product: Product record
         """
         entity_id = item_data.get('entity_id') or item_data.get('id')
-        entity_type = item_data.get('entity_type', '')
 
-        # Initialize item_id
-        item_id = None
-
-        # If entity is an item_price, fetch the parent item_id from Chargebee
-        if 'item_price' in entity_type or 'plan_item_price' in entity_type:
-            try:
-                # Configure Chargebee
-                chargebee_config = self.env['chargebee.configuration'].search([], limit=1)
-                if chargebee_config and chargebee_config.api_key and chargebee_config.site_name:
-                    chargebee.configure(chargebee_config.api_key, chargebee_config.site_name)
-
-                    # Fetch the item_price to get parent item_id
-                    item_price_result = chargebee.ItemPrice.retrieve(entity_id)
-                    item_price = item_price_result.item_price
-                    item_id = item_price.item_id  # This is the actual product/item ID
-                    _logger.info(f"Resolved item_price_id '{entity_id}' to item_id '{item_id}'")
-            except Exception as e:
-                _logger.warning(f"Could not fetch item_price {entity_id} from Chargebee: {e}")
-                # Fallback: try to parse the item_id from entity_id (format: item_id-currency-period)
-                if '-' in entity_id:
-                    item_id = entity_id.split('-')[0]
-                    _logger.info(f"Parsed item_id '{item_id}' from entity_id '{entity_id}'")
-        else:
-            # Entity is already an item_id
-            item_id = entity_id
-
-        if not item_id:
-            _logger.error(f"Could not determine item_id for entity {entity_id}")
+        if not entity_id:
+            _logger.error(f"Could not determine entity_id/id for line item")
             return None
 
-        # Search for existing product using the item_id
+        # Search for existing product using the entity_id
         product = self.env['product.product'].search([
-            ('default_code', '=', item_id),
-            # ('company_id', '=', company.id)
+            ('default_code', '=', entity_id),
         ], limit=1)
 
         if not product:
             # Create new product
             product = self.env['product.product'].sudo().create({
-                'name': item_data.get('description') or f"Chargebee Item {item_id}",
-                'default_code': item_id,  # Store the item_id, not item_price_id
+                'name': item_data.get('description') or f"Chargebee Item {entity_id}",
+                'default_code': entity_id,  # Store the entity_id
                 'list_price': item_data.get('unit_amount', 0) / 100,
                 'type': 'service',
                 'company_id': False,
@@ -1399,7 +1372,7 @@ class AccountMove(models.Model):
                 'supplier_taxes_id': [(5, 0, 0)],
             })
             product.product_tmpl_id._apply_chargebee_configured_taxes()
-            _logger.info(f"Created product {product.name} with item_id {item_id}")
+            _logger.info(f"Created product {product.name} with item_id {entity_id}")
 
         return product
 

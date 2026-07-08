@@ -323,6 +323,7 @@ class ChargebeeWebhookController(http.Controller):
             config = request.env['chargebee.configuration'].sudo().search([], limit=1)
             price = 0.0
             currency = 'USD'
+            item_price_id = item_id
             if config and config.api_key and config.site_name:
                 chargebee.configure(config.api_key, config.site_name)
                 try:
@@ -331,6 +332,7 @@ class ChargebeeWebhookController(http.Controller):
                         item_price_data = item_prices[0].item_price
                         price = item_price_data.price / 100 if item_price_data.price else 0.0
                         currency = item_price_data.currency_code or 'USD'
+                        item_price_id = item_price_data.id
                 except Exception as e:
                     _logger.info("Could not fetch item price for item %s: %s", item_id, str(e))
 
@@ -345,18 +347,18 @@ class ChargebeeWebhookController(http.Controller):
                 })
 
             ProductTemplate = request.env['product.template'].sudo()
-            existing_product = ProductTemplate.search([('default_code', '=', item_id)], limit=1)
+            existing_product = ProductTemplate.search([('default_code', '=', item_price_id)], limit=1)
 
             vals = {
                 'name': item_name,
                 'list_price': price,
-                'default_code': item_id,
+                'default_code': item_price_id,
                 'description_sale': item_description or '',
                 'description': item_description or '',
                 'categ_id': category.id,
                 'currency_id': request.env['res.currency'].sudo().search([('name', '=', currency)], limit=1).id,
                 'company_id': False,
-                'chargebee_id': item_id,
+                'chargebee_id': item_price_id,
                 'chargebee_created': True,
                 'item_family_id': family.id if family else False,
                 'taxes_id': [(5, 0, 0)],
