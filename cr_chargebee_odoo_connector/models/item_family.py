@@ -47,9 +47,7 @@ class ChargebeeItemFamily(models.Model):
 
         try:
             for family_data in families:
-                _logger.info("❌❌ family data : %s", family_data)
                 chargebee_family = family_data.item_family
-                _logger.info("❌❌ family item : %s", family_data.item_family)
                 vals = {
                     "name": chargebee_family.name,
                     "chargebee_id": chargebee_family.id,

@@ -131,6 +131,10 @@ class ResPartner(models.Model):
                 chargebee_customer.business_entity_id
             )
             try:
+                vat_number = getattr(chargebee_customer.billing_address, 'vat_number', False) if getattr(chargebee_customer, 'billing_address', None) else False
+                if not vat_number:
+                    vat_number = getattr(chargebee_customer, 'vat_number', False)
+
                 partner_vals = {
                     "name": f"{chargebee_customer.first_name} {getattr(chargebee_customer, 'last_name', '')}".strip(),
                     "email": chargebee_customer.email,
@@ -139,12 +143,19 @@ class ResPartner(models.Model):
                     "chargebee_customer_id": chargebee_customer.id,
                     "company_id": customer_company.id,
                     "is_company": True,
+                    "vat": vat_number,
                 }
 
                 # Update existing or create new
-                existing_partner = self.env["res.partner"].search(
-                    [("chargebee_customer_id", "=", chargebee_customer.id), ("company_id", "=", customer_company.id)], limit=1
+                existing_partner = self.env["res.partner"].sudo().search(
+                    [("chargebee_customer_id", "=", chargebee_customer.id), ("company_id", "in", [customer_company.id, False])],
+                    order="company_id desc", limit=1
                 )
+                if not existing_partner and chargebee_customer.email:
+                    existing_partner = self.env["res.partner"].sudo().search(
+                        [("email", "=", chargebee_customer.email), ("company_id", "in", [customer_company.id, False])],
+                        order="company_id desc", limit=1
+                    )
                 if existing_partner:
                     existing_partner.write(partner_vals)
                 else:

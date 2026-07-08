@@ -82,7 +82,6 @@ class AccountMove(models.Model):
             download_url = pdf_data.download.download_url
 
             # 2. Download the PDF content
-            _logger.info("Downloading Chargebee PDF from: %s", download_url)
             response = requests.get(download_url, timeout=30)
             if response.status_code == 200:
                 pdf_content = base64.b64encode(response.content)
@@ -176,7 +175,6 @@ class AccountMove(models.Model):
         if not self.env.registry.ready:
             return super().create(vals_list)
 
-        _logger.info("➡️➡️ create method invoked.")
         invoices = super(AccountMove, self).create(vals_list)
         subscription_invoices = invoices.filtered(
             lambda m: m.ref and 'Subscription' in m.ref
@@ -216,16 +214,13 @@ class AccountMove(models.Model):
                             f"Skipping reconciled invoice: {invoice.chargebee_id}"
                         )
                         continue
-                    _logger.info("➡️➡️ invoice isn't reconciled.")
                     # Sync credit notes
                     self.sync_credit_notes(invoice)
-                    _logger.info("➡️➡️ credit note function complete from create")
                     # Fetch payment details from Chargebee
 
                     payments = chargebee.Transaction.list(
                         {"invoice_id": invoice.chargebee_id}
                     )
-                    _logger.info("➡️➡️ fetched transaction from create")
                     total_paid = 0
 
                     for payment_data in payments:
@@ -281,9 +276,6 @@ class AccountMove(models.Model):
                             # ).id,
                             "communication": f"Chargebee Payment: {payment.id}",
                         }
-                        _logger.info("➡️➡️ creating payment from create method...")
-                        _logger.info("➡️➡️ invoice state : %s", invoice.state)
-
                         if invoice.state != "posted":
                             invoice.action_post()
                         odoo_payment = (
@@ -294,7 +286,6 @@ class AccountMove(models.Model):
                             .sudo()
                             .create(payment_vals)
                         )
-                        _logger.info("⚒️⚒️ payment : %s", odoo_payment)
                         odoo_payment.action_create_payments()
                         total_paid += payment_amount
 
@@ -424,7 +415,6 @@ class AccountMove(models.Model):
     def sync_credit_notes(self, invoice):
         """Fetch and sync credit notes related to an invoice."""
         try:
-            _logger.info("➡️➡️ credit note sync invoked")
             if not invoice.chargebee_id:
                 _logger.warning(
                     "Skipping credit note sync: missing Chargebee invoice ID for invoice %s",
@@ -567,7 +557,6 @@ class AccountMove(models.Model):
             invoices = chargebee.Invoice.list({"limit": 100})
             for inv_data in invoices:
                 invoice = inv_data.invoice
-                _logger.info("Chargebee Invoice Response: %s", invoice)
 
                 # skipping subscription invoice
                 # if invoice.subscription_id:
@@ -667,7 +656,7 @@ class AccountMove(models.Model):
                     invoice_company,
                     chargebee_line_items
                 )
-                _logger.info("👉👉👉 Invoice journal : %s %s", invoice_journal, invoice_journal.name)
+        
                 if not invoice_journal:
                     raise UserError(
                         _(
@@ -811,7 +800,7 @@ class AccountMove(models.Model):
             return
 
         for payment_data in linked_payments:
-            _logger.info("➡️➡️➡️ payment data : %s", payment_data)
+
 
             # Check remaining amount before each payment
             if odoo_invoice.amount_residual <= 0:
@@ -1097,25 +1086,70 @@ class AccountMove(models.Model):
     def _get_or_create_partner(self, invoice):
         """Fetch or create a partner based on Chargebee invoice data."""
         billing_address = getattr(invoice, "billing_address", None)
+        vat_number = getattr(invoice, "vat_number", False)
+        if not vat_number and billing_address:
+            vat_number = getattr(billing_address, "vat_number", False)
+
+        customer_id = getattr(invoice, "customer_id", None)
+        email = getattr(billing_address, "email", None)
         full_name = f"{getattr(billing_address, 'first_name', '')} {getattr(billing_address, 'last_name', '')}".strip()
-        partner = self.env["res.partner"].search([("name", "=", full_name)], limit=1)
+
+        partner = False
+        if customer_id:
+            partner = self.env["res.partner"].sudo().search([("chargebee_customer_id", "=", customer_id)], limit=1)
+
+        if not partner and email:
+            partner = self.env["res.partner"].sudo().search([("email", "=", email)], limit=1)
+
+        if not partner and full_name:
+            partner = self.env["res.partner"].sudo().search([("name", "=", full_name)], limit=1)
 
         if not partner:
+            # Fetch actual customer details from Chargebee to get email and address
+            phone = getattr(billing_address, "phone", "")
+            street = getattr(billing_address, "street", "")
+            city = getattr(billing_address, "city", "")
+            zip_code = getattr(billing_address, "zip", "")
+            country_name = getattr(billing_address, "country", "")
+
+            if customer_id:
+                try:
+                    customer_res = chargebee.Customer.retrieve(customer_id)
+                    cb_customer = customer_res.customer
+                    email = cb_customer.email or email
+                    if not phone:
+                        phone = cb_customer.phone or ""
+                    cb_billing = getattr(cb_customer, 'billing_address', None)
+                    if cb_billing:
+                        if not street:
+                            street = cb_billing.street or ""
+                        if not city:
+                            city = cb_billing.city or ""
+                        if not zip_code:
+                            zip_code = cb_billing.zip or ""
+                        if not country_name:
+                            country_name = cb_billing.country or ""
+                except Exception as ex:
+                    _logger.info("Could not retrieve customer details from Chargebee: %s", str(ex))
+
             partner = (
                 self.env["res.partner"]
                 .sudo()
                 .create(
                     {
-                        "name": full_name,
-                        "phone": getattr(billing_address, "phone", ""),
-                        "street": getattr(billing_address, "street", ""),
-                        "city": getattr(billing_address, "city", ""),
-                        "zip": getattr(billing_address, "zip", ""),
+                        "name": full_name or "Chargebee Customer",
+                        "phone": phone,
+                        "email": email or "",
+                        "street": street,
+                        "city": city,
+                        "zip": zip_code,
                         "is_company": True,
+                        "chargebee_customer_id": customer_id,
+                        "vat": vat_number,
                         "country_id": self.env["res.country"]
                         .sudo()
                         .search(
-                            [("name", "=", getattr(billing_address, "country", ""))],
+                            [("name", "=", country_name)],
                             limit=1,
                         )
                         .id,
@@ -1127,12 +1161,32 @@ class AccountMove(models.Model):
                     }
                 )
             )
+
+        vals_to_write = {}
+        if customer_id and not partner.chargebee_customer_id:
+            vals_to_write['chargebee_customer_id'] = customer_id
+        if vat_number and not partner.vat:
+            vals_to_write['vat'] = vat_number
+        if vals_to_write:
+            partner.write(vals_to_write)
+            _logger.info("Updated partner '%s' with %s during manual invoice sync", partner.name, vals_to_write)
         return partner
 
     def create_partner_for_subscription(self, invoice):
         """Fetch or create a partner based on Chargebee invoice data."""
         billing_address = getattr(invoice, "billing_address", None)
         full_name = f"Subscription Partner"
+        customer_id = getattr(invoice, "customer_id", None)
+        vat_number = False
+        if customer_id:
+            try:
+                customer = chargebee.Customer.retrieve(customer_id)
+                vat_number = customer.customer.billing_address.vat_number if getattr(customer.customer, 'billing_address', None) else False
+                if not vat_number:
+                    vat_number = getattr(customer.customer, 'vat_number', False)
+            except Exception as ex:
+                _logger.info("Could not retrieve customer VAT from Chargebee in subscription sync: %s", str(ex))
+
         partner = (
             self.env["res.partner"]
             .sudo()
@@ -1144,6 +1198,7 @@ class AccountMove(models.Model):
                     "city": getattr(billing_address, "city", ""),
                     "zip": getattr(billing_address, "zip", ""),
                     "is_company": True,
+                    "vat": vat_number,
                     "country_id": self.env["res.country"]
                     .sudo()
                     .search(
@@ -1173,10 +1228,17 @@ class AccountMove(models.Model):
             account.move: Created or updated invoice record
         """
         try:
-            _logger.info("➡️➡️ invoice data : %s", invoice_data)
             invoice_id = invoice_data.get('id')
             subscription_id = invoice_data.get('subscription_id')
             business_entity_id = invoice_data.get('business_entity_id')
+            customer_id = invoice_data.get('customer_id')
+
+            # Acquire transaction-level advisory lock on customer_id to serialize concurrent webhooks
+            if customer_id:
+                import zlib
+                lock_key = zlib.crc32(customer_id.encode('utf-8')) & 0x7FFFFFFF
+                self.env.cr.execute("SELECT pg_advisory_xact_lock(%s)", (lock_key,))
+                _logger.info("Acquired advisory lock for customer '%s'", customer_id)
 
             # Get or create company based on business entity
             invoice_company = self.env['res.company'].get_or_create_company_from_chargebee(
@@ -1189,7 +1251,7 @@ class AccountMove(models.Model):
                 ('company_id', '=', invoice_company.id)
             ], limit=1)
 
-            _logger.info("➡️➡️ existing_invoice : %s", existing_invoice)
+
 
             # Skip if invoice is already posted (don't modify posted invoices)
             if existing_invoice and existing_invoice.state == 'posted':
@@ -1206,7 +1268,7 @@ class AccountMove(models.Model):
                 invoice_data.get('line_items', []),
                 invoice_company
             )
-            _logger.info("➡️➡️ Line Items : %s", line_items)
+
 
             if not line_items:
                 _logger.warning(f"No line items found for invoice {invoice_id}")
@@ -1222,7 +1284,7 @@ class AccountMove(models.Model):
                 invoice_data.get('line_items', [])
             )
 
-            _logger.info("➡️➡️ invoice journal : %s", invoice_journal)
+
 
             if not invoice_journal or not invoice_journal.default_account_id:
                 raise UserError(
@@ -1272,10 +1334,10 @@ class AccountMove(models.Model):
             return odoo_invoice
 
         except Exception as e:
-            # Handle unique constraint race conditions gracefully
+            # Handle unique constraint and serialization failures/concurrent updates gracefully
             err_msg = str(e)
-            if "unique constraint" in err_msg or "duplicate key" in err_msg or "account_move_unique_name" in err_msg:
-                _logger.info("Detected unique constraint race condition for invoice %s. Rolling back and retrying...", invoice_id)
+            if any(term in err_msg for term in ["unique constraint", "duplicate key", "account_move_unique_name", "could not serialize", "concurrent update"]):
+                _logger.info("Detected unique constraint or concurrent update race condition for invoice %s. Rolling back and retrying...", invoice_id)
                 self.env.cr.rollback()
                 import time
                 time.sleep(3.0)
@@ -1292,10 +1354,10 @@ class AccountMove(models.Model):
                             # We need to process payment on it now
                             self._process_webhook_payments(existing, invoice_data, webhook_content)
                         except Exception as pay_err:
-                            _logger.error("Failed to process payment on existing invoice %s: %s", existing.name, str(pay_err))
+                            _logger.info("Failed to process payment on existing invoice %s: %s", existing.name, str(pay_err))
                     return existing
 
-            _logger.error(f"Error syncing invoice from webhook: {str(e)}", exc_info=True)
+            _logger.info("Error syncing invoice from webhook: %s", str(e))
             self.env.cr.rollback()
             raise
 
@@ -1315,7 +1377,7 @@ class AccountMove(models.Model):
         for item in line_items:
             # Get or create product
             product = self._get_or_create_product_from_webhook(item, company)
-            _logger.info("❌❌ item data : %s", item)
+
 
             if not product:
                 _logger.warning(f"Could not create product for item: {item.get('id')}")
@@ -1323,7 +1385,7 @@ class AccountMove(models.Model):
 
             date_from = item["date_from"]
             date_to = item["date_to"]
-            _logger.info("📅📅📅 start date : %s and  end date : %s", date_from, date_to)
+
             line_val = (0, 0, {
                 'name': item.get('description') or 'Chargebee Item',
                 'quantity': item.get('quantity', 1),
@@ -1390,54 +1452,70 @@ class AccountMove(models.Model):
         """
         # Try to get customer data from webhook
         customer_id = invoice_data.get('customer_id')
+        vat_number = invoice_data.get('vat_number') or invoice_data.get('billing_address', {}).get('vat_number')
+        if vat_number:
+            _logger.info("Found VAT number '%s' in webhook invoice payload", vat_number)
 
         # Search by Chargebee customer ID first
+        partner = False
         if customer_id:
-            partner = self.env['res.partner'].search([
+            partner = self.env['res.partner'].sudo().search([
                 ('chargebee_customer_id', '=', customer_id)
             ], limit=1)
 
-            if partner:
-                return partner
-
-        # Fallback: Create from billing address if available
         billing_address = invoice_data.get('billing_address', {})
+        email = billing_address.get('email', '') if billing_address else ''
+        full_name = f"{billing_address.get('first_name', '')} {billing_address.get('last_name', '')}".strip() if billing_address else ''
 
-        if billing_address:
-            first_name = billing_address.get('first_name', '')
-            last_name = billing_address.get('last_name', '')
-            full_name = f"{first_name} {last_name}".strip() or "Chargebee Customer"
+        # Fallback to Email search
+        if not partner and email:
+            partner = self.env['res.partner'].sudo().search([('email', '=', email)], limit=1)
 
-            # Search by name
-            partner = self.env['res.partner'].search([('name', '=', full_name)], limit=1)
+        # Fallback to Name search
+        if not partner and full_name:
+            partner = self.env['res.partner'].sudo().search([('name', '=', full_name)], limit=1)
 
-            if not partner:
-                # Create new partner
+        if not partner:
+            if billing_address:
+                if not partner:
+                    # Create new partner
+                    partner = self.env['res.partner'].sudo().create({
+                        'name': full_name or "Chargebee Customer",
+                        'chargebee_customer_id': customer_id,
+                        'phone': billing_address.get('phone', ''),
+                        'email': email or '',
+                        'street': billing_address.get('line1', ''),
+                        'street2': billing_address.get('line2', ''),
+                        'city': billing_address.get('city', ''),
+                        'zip': billing_address.get('zip', ''),
+                        'is_company': True,
+                        'vat': vat_number,
+                        'state_id': False,  # Add state mapping if needed
+                        'country_id': self.env['res.country'].sudo().search([
+                            ('code', '=', billing_address.get('country', ''))
+                        ], limit=1).id,
+                        'company_id': company.id,
+                    })
+                    _logger.info(f"Created partner {partner.name} from webhook")
+            else:
+                # Create generic partner if no billing address
                 partner = self.env['res.partner'].sudo().create({
-                    'name': full_name,
+                    'name': 'Chargebee Customer',
                     'chargebee_customer_id': customer_id,
-                    'phone': billing_address.get('phone', ''),
-                    'email': billing_address.get('email', ''),
-                    'street': billing_address.get('line1', ''),
-                    'street2': billing_address.get('line2', ''),
-                    'city': billing_address.get('city', ''),
-                    'zip': billing_address.get('zip', ''),
                     'is_company': True,
-                    'state_id': False,  # Add state mapping if needed
-                    'country_id': self.env['res.country'].sudo().search([
-                        ('code', '=', billing_address.get('country', ''))
-                    ], limit=1).id,
+                    'vat': vat_number,
                     'company_id': company.id,
                 })
-                _logger.info(f"Created partner {partner.name} from webhook")
-        else:
-            # Create generic partner if no billing address
-            partner = self.env['res.partner'].sudo().create({
-                'name': 'Chargebee Customer',
-                'chargebee_customer_id': customer_id,
-                'is_company': True,
-                'company_id': company.id,
-            })
+
+        # Update VAT number & Chargebee ID if partner exists but they are not set
+        vals_to_write = {}
+        if customer_id and not partner.chargebee_customer_id:
+            vals_to_write['chargebee_customer_id'] = customer_id
+        if vat_number and not partner.vat:
+            vals_to_write['vat'] = vat_number
+        if vals_to_write:
+            partner.write(vals_to_write)
+            _logger.info("Updated partner '%s' with %s in webhook", partner.name, vals_to_write)
 
         return partner
 
@@ -1478,13 +1556,13 @@ class AccountMove(models.Model):
                 try:
                     item_price_result = chargebee.ItemPrice.retrieve(entity_id)
                     item_id = item_price_result.item_price.item_id
-                    _logger.info(f"✅ Resolved item_price_id '{entity_id}' to item_id '{item_id}'")
+                    _logger.info(f"Resolved item_price_id '{entity_id}' to item_id '{item_id}'")
                 except Exception as e:
                     _logger.warning(f"Could not fetch item_price {entity_id}: {e}")
                     # Fallback: parse item_id from entity_id (format: item_id-currency-period)
                     if '-' in str(entity_id):
                         item_id = entity_id.split('-')[0]
-                        _logger.info(f"✅ Parsed item_id '{item_id}' from entity_id '{entity_id}'")
+                        _logger.info(f"Parsed item_id '{item_id}' from entity_id '{entity_id}'")
             else:
                 # Entity is already an item_id
                 item_id = entity_id
@@ -1499,7 +1577,7 @@ class AccountMove(models.Model):
 
             if hasattr(item, 'item_family_id') and item.item_family_id:
                 family_id = item.item_family_id
-                _logger.info(f"✅ Found item_family_id '{family_id}' from Chargebee for item '{item_id}'")
+                _logger.info(f"Found item_family_id '{family_id}' from Chargebee for item '{item_id}'")
 
                 # Fetch or find the family in Odoo
                 odoo_family = self.env['chargebee.item.family'].search([
@@ -1515,7 +1593,7 @@ class AccountMove(models.Model):
                             'name': chargebee_family.name,
                             'chargebee_id': chargebee_family.id,
                         })
-                        _logger.info(f"✅ Created item family '{odoo_family.name}' in Odoo")
+                        _logger.info(f"Created item family '{odoo_family.name}' in Odoo")
                     except Exception as e:
                         _logger.warning(f"Could not create family {family_id}: {e}")
                         return None
@@ -1552,7 +1630,7 @@ class AccountMove(models.Model):
             )[:1]
             if journal_config:
                 _logger.info(
-                    f"✅ Using family-specific journal config for company '{company.name}' and family '{item_family.name}'")
+                    f"Using family-specific journal config for company '{company.name}' and family '{item_family.name}'")
 
         # Fallback to company-only match if no family match found
         if not journal_config:
@@ -1560,7 +1638,7 @@ class AccountMove(models.Model):
                 lambda r: r.company_id.id == company.id
             )[:1]
             if journal_config:
-                _logger.info(f"ℹ️ Using company-only journal config for '{company.name}' (no family match)")
+                _logger.info(f"Using company-only journal config for '{company.name}' (no family match)")
 
         invoice_journal = (
             journal_config.invoice_journal_id
@@ -1572,9 +1650,9 @@ class AccountMove(models.Model):
         )
 
         if invoice_journal:
-            _logger.info(f"✅ Selected invoice journal: {invoice_journal.name}")
+            _logger.info(f"Selected invoice journal: {invoice_journal.name}")
         else:
-            _logger.warning(f"⚠️ No invoice journal found for company {company.name}")
+            _logger.warning(f"No invoice journal found for company {company.name}")
 
         return invoice_journal
 
@@ -1616,7 +1694,7 @@ class AccountMove(models.Model):
         )
 
         if payment_journal:
-            _logger.info(f"✅ Selected payment journal: {payment_journal.name}")
+            _logger.info(f"Selected payment journal: {payment_journal.name}")
 
         return payment_journal
 
@@ -1658,7 +1736,7 @@ class AccountMove(models.Model):
         )
 
         if credit_note_journal:
-            _logger.info(f"✅ Selected credit note journal: {credit_note_journal.name}")
+            _logger.info(f"Selected credit note journal: {credit_note_journal.name}")
 
         return credit_note_journal
 
@@ -1672,10 +1750,7 @@ class AccountMove(models.Model):
             webhook_content (dict): Full webhook content
         """
         try:
-            _logger.info("🎯 processing payment... ")
-            # Check if there are linked payments
             linked_payments = invoice_data.get('linked_payments', [])
-            _logger.info("➡️➡️ Linked Payments : %s", linked_payments)
 
             # Also check for transaction in webhook content (for payment_succeeded event)
             if webhook_content and webhook_content.get('transaction'):
@@ -1688,7 +1763,7 @@ class AccountMove(models.Model):
                 })()
                 linked_payments = [linked_payment]
 
-            _logger.info("➡️➡️ below linked payments : %s", linked_payments)
+
 
             if linked_payments:
                 _logger.info(f"Processing {len(linked_payments)} payments for invoice {odoo_invoice.name}")

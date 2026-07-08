@@ -55,7 +55,7 @@
         Advanced Chargebee-Odoo Connector,
         Best subscription management solution in Odoo.
     """,
-    "version": "17.0.0.1",
+    "version": "17.0.0.2",
     "license": "OPL-1",
     "description": """
     The Chargebee Integration module provides a powerful connection between Odoo and Chargebee's subscription management services. 

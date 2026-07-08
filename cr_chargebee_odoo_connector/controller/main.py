@@ -106,7 +106,7 @@ class ChargebeeWebhookController(http.Controller):
 
             _logger.info(f"Processing subscription invoice {invoice_id} for event {event_type}")
 
-            _logger.info("👉 Event Type : %s", event_type)
+
             # Process based on event type
             if event_type == 'invoice_generated':
                 result = self._handle_invoice_generated(invoice_data, content)
@@ -135,7 +135,7 @@ class ChargebeeWebhookController(http.Controller):
             dict: Response with status
         """
         try:
-            _logger.info("🎯 Handling Invoice Generated")
+
             # Use existing method from account.move to sync invoice
             AccountMove = request.env['account.move'].sudo()
 
@@ -168,22 +168,22 @@ class ChargebeeWebhookController(http.Controller):
             dict: Response with status
         """
         try:
-            _logger.info("🎯 Handling Payment Succeeded")
+
             invoice_id = invoice_data.get('id')
             AccountMove = request.env['account.move'].sudo()
 
             # Find existing invoice with a small delay to allow invoice_generated to complete
             odoo_invoice = AccountMove.search([('chargebee_id', '=', invoice_id)], limit=1)
-            _logger.info("👉👉 odoo invoice for payment : %s", odoo_invoice)
+
             # If invoice doesn't exist, wait a moment and try again (race condition handling)
             if not odoo_invoice:
-                _logger.info("👉👉 invoice is not found for payment")
+
                 import time
                 time.sleep(3.5)  # Wait 900ms for invoice_generated event to complete
                 odoo_invoice = AccountMove.search([('chargebee_id', '=', invoice_id)], limit=1)
 
             if not odoo_invoice:
-                _logger.info("👉👉 creating invoice for payment")
+
                 _logger.warning(f"Invoice {invoice_id} not found in Odoo, creating it first")
                 # Create invoice first if it doesn't exist
                 odoo_invoice = AccountMove.sync_invoice_from_webhook_data(invoice_data, content)
@@ -226,7 +226,7 @@ class ChargebeeWebhookController(http.Controller):
             dict: Response with status
         """
         try:
-            _logger.info("🎯 Handling Invoice Update")
+
             invoice_id = invoice_data.get('id')
             AccountMove = request.env['account.move'].sudo()
 
@@ -268,20 +268,31 @@ class ChargebeeWebhookController(http.Controller):
                 return {"status": "error", "message": "No customer data"}
 
             customer_id = customer_data.get('id')
+            if customer_id:
+                import zlib
+                lock_key = zlib.crc32(customer_id.encode('utf-8')) & 0x7FFFFFFF
+                request.env.cr.execute("SELECT pg_advisory_xact_lock(%s)", (lock_key,))
+                _logger.info("Acquired advisory lock for customer '%s' in customer webhook", customer_id)
             first_name = customer_data.get('first_name', '')
             last_name = customer_data.get('last_name', '')
             email = customer_data.get('email')
             phone = customer_data.get('phone')
             company_name = customer_data.get('company')
             business_entity_id = customer_data.get('business_entity_id')
+            vat = customer_data.get('vat_number') or customer_data.get('billing_address', {}).get('vat_number')
 
             customer_company = request.env['res.company'].sudo().get_or_create_company_from_chargebee(business_entity_id)
 
             ResPartner = request.env['res.partner'].sudo()
             existing_partner = ResPartner.search([
                 ('chargebee_customer_id', '=', customer_id),
-                ('company_id', '=', customer_company.id)
-            ], limit=1)
+                ('company_id', 'in', [customer_company.id, False])
+            ], order="company_id desc", limit=1)
+            if not existing_partner and email:
+                existing_partner = ResPartner.search([
+                    ('email', '=', email),
+                    ('company_id', 'in', [customer_company.id, False])
+                ], order="company_id desc", limit=1)
 
             partner_name = f"{first_name} {last_name}".strip() or email or customer_id
             partner_vals = {
@@ -292,6 +303,7 @@ class ChargebeeWebhookController(http.Controller):
                 'chargebee_customer_id': customer_id,
                 'company_id': customer_company.id,
                 'is_company': True,
+                'vat': vat,
             }
 
             if existing_partner:

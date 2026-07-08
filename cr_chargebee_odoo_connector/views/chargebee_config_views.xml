@@ -251,6 +251,12 @@
                                                     <li>✓ invoice_generated</li>
                                                     <li>✓ payment_succeeded</li>
                                                     <li>✓ invoice_updated</li>
+                                                    <li>✓ customer_created</li>
+                                                    <li>✓ customer_changed</li>
+                                                    <li>✓ item_created</li>
+                                                    <li>✓ item_updated</li>
+                                                    <li>✓ item_family_created</li>
+                                                    <li>✓ item_family_updated</li>
                                                 </ul>
                                             </li>
                                             <li>
@@ -296,6 +302,36 @@
                                                     <td><code>invoice_updated</code></td>
                                                     <td>Invoice details updated in Chargebee</td>
                                                     <td>Updates existing invoice in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>customer_created</code></td>
+                                                    <td>Customer account created in Chargebee</td>
+                                                    <td>Creates new contact in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>customer_changed</code></td>
+                                                    <td>Customer account details updated in Chargebee</td>
+                                                    <td>Updates existing contact in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>item_created</code></td>
+                                                    <td>New item/product created in Chargebee</td>
+                                                    <td>Creates new product template in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>item_updated</code></td>
+                                                    <td>Item/product details updated in Chargebee</td>
+                                                    <td>Updates existing product template in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>item_family_created</code></td>
+                                                    <td>New item family created in Chargebee</td>
+                                                    <td>Creates new product category in Odoo</td>
+                                                </tr>
+                                                <tr>
+                                                    <td><code>item_family_updated</code></td>
+                                                    <td>Item family details updated in Chargebee</td>
+                                                    <td>Updates existing product category in Odoo</td>
                                                 </tr>
                                             </tbody>
                                         </table>
