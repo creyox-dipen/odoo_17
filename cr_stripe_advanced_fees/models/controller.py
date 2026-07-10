@@ -51,16 +51,24 @@ class PublicStripeInfo(http.Controller):
         return {"country_id": company.country_id.id if company.country_id else None}
 
     @http.route(
-        ["/custom/stripe/order_partner_country/<int:order_id>"],
+        [
+            "/custom/stripe/order_partner_country",
+            "/custom/stripe/order_partner_country/<int:order_id>",
+        ],
         type="json",
         auth="public",
         csrf=False,
     )
-    def get_order_partner_country(self, order_id):
-        order = request.env["sale.order"].sudo().browse(order_id)
+    def get_order_partner_country(self, order_id=None):
+        if order_id:
+            order = request.env["sale.order"].sudo().browse(order_id)
+        else:
+            order = request.website.sale_get_order()
         partner = (
-            order.partner_shipping_id
+            order.partner_shipping_id if order else None
         )  # Use billing partner to match backend transaction logic
+        if not partner:
+            partner = request.env.user.partner_id
         return {
             "country_id": (
                 partner.country_id.id if partner and partner.country_id else None

@@ -27,7 +27,8 @@ paymentForm.include({
         const { companyCountryId, partnerCountryId } = await this._fetchCountryData(providerData);
         // Calculate fees
         if (providerData.is_extra_fees == true) {
-            const baseAmount = parseFloat(this.paymentContext.amount || 0);
+            const rawAmount = this.el?.getAttribute('data-amount') || this.paymentContext.amount;
+            const baseAmount = this._parseAmount(rawAmount);
             const calculatedFees = this._calculateFees(
                 baseAmount,
                 providerData,
@@ -104,18 +105,19 @@ paymentForm.include({
         }
         // Fetch partner (billing) country
         const orderId = this._extractOrderId();
-        if (orderId) {
-            try {
-                const response = await fetch(`/custom/stripe/order_partner_country/${orderId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({}),
-                });
-                const orderData = await response.json();
-                partnerCountryId = orderData.result?.country_id || null;
-            } catch (error) {
-                console.error('[Stripe Badge] Failed to fetch partner country:', error);
-            }
+        const url = orderId 
+            ? `/custom/stripe/order_partner_country/${orderId}` 
+            : `/custom/stripe/order_partner_country`;
+        try {
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({}),
+            });
+            const orderData = await response.json();
+            partnerCountryId = orderData.result?.country_id || null;
+        } catch (error) {
+            console.error('[Stripe Badge] Failed to fetch partner country:', error);
         }
         return { companyCountryId, partnerCountryId };
     },
@@ -126,10 +128,28 @@ paymentForm.include({
         }
         return null;
     },
+    _parseAmount(amount) {
+        if (amount === undefined || amount === null) {
+            return 0;
+        }
+        if (typeof amount === 'number') {
+            return amount;
+        }
+        let cleaned = String(amount).replace(/[^\d.,-]/g, '');
+        if (cleaned.includes(',') && cleaned.includes('.')) {
+            cleaned = cleaned.replace(/,/g, '');
+        } else if (cleaned.includes(',')) {
+            if (cleaned.match(/,\d{2}$/)) {
+                cleaned = cleaned.replace(/,/g, '.');
+            } else {
+                cleaned = cleaned.replace(/,/g, '');
+            }
+        }
+        const parsed = parseFloat(cleaned);
+        return isNaN(parsed) ? 0 : parsed;
+    },
     _calculateFees(baseAmount, providerData, companyCountryId, partnerCountryId, methodCode) {
         const isInternational = partnerCountryId && companyCountryId && partnerCountryId !== companyCountryId;
-        // Find matching fee line
-        // Normalize input
         const mcode = (methodCode || '').toLowerCase();
 
         // Try perfect match
@@ -177,6 +197,11 @@ paymentForm.include({
             return;
         }
 
+        if (calculatedFees <= 0) {
+            badgeContainer.classList.add('d-none');
+            return;
+        }
+
         const currencyId = parseInt(this.paymentContext.currencyId);
 
         this.rpc('/web/dataset/call_kw', {
@@ -219,6 +244,12 @@ paymentForm.include({
         // Remove existing badge
         const existingBadge = stripeInlineForm.querySelector('.stripe-fees-badge');
         if (existingBadge) existingBadge.remove();
+
+        if (calculatedFees <= 0) {
+            console.log('[Stripe Badge] Payment method badge skipped (fees <= 0):', calculatedFees);
+            return;
+        }
+
         // Get currency symbol
         const stripeInlineFormValues = JSON.parse(
             stripeInlineForm.dataset['stripeInlineFormValues']
