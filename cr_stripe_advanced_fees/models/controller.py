@@ -2,6 +2,7 @@
 # Part of Creyox Technologies.
 from odoo import http
 from odoo.http import request
+from odoo.addons.payment.controllers.portal import PaymentPortal
 
 
 class PublicStripeInfo(http.Controller):
@@ -133,3 +134,19 @@ class PublicStripeInfo(http.Controller):
 
         # No token → new card entry
         return {"payment_method_code": "card"}
+
+
+class StripePaymentPortal(PaymentPortal):
+    @classmethod
+    def _validate_transaction_kwargs(cls, kwargs, additional_allowed_keys=()):
+        """Override to automatically whitelist stripe_card_brand kwarg in all payment transaction routes."""
+        additional_allowed_keys = list(additional_allowed_keys) + ['stripe_card_brand']
+        return super()._validate_transaction_kwargs(kwargs, additional_allowed_keys=tuple(additional_allowed_keys))
+
+    def _create_transaction(self, *args, **kwargs):
+        """Override _create_transaction to save stripe_card_brand on payment.transaction."""
+        stripe_card_brand = kwargs.get('stripe_card_brand')
+        tx_sudo = super()._create_transaction(*args, **kwargs)
+        if stripe_card_brand and tx_sudo.provider_id.code == 'stripe':
+            tx_sudo.stripe_card_brand = stripe_card_brand
+        return tx_sudo

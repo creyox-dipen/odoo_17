@@ -1,5 +1,46 @@
 /** @odoo-module **/
 
+function wrapStripe(StripeLib) {
+    return function (publishableKey, options) {
+        const stripeInstance = StripeLib(publishableKey, options);
+        if (!stripeInstance) {
+            return stripeInstance;
+        }
+        return new Proxy(stripeInstance, {
+            get(target, prop, receiver) {
+                if (prop === 'elements') {
+                    return function (elementsOptions) {
+                        if (elementsOptions && elementsOptions.mode === 'payment') {
+                            elementsOptions.paymentMethodCreation = 'manual';
+                        }
+                        return target.elements.call(target, elementsOptions);
+                    };
+                }
+                const value = Reflect.get(target, prop, receiver);
+                if (typeof value === 'function') {
+                    return value.bind(target);
+                }
+                return value;
+            }
+        });
+    };
+}
+
+if (window.Stripe) {
+    window.Stripe = wrapStripe(window.Stripe);
+} else {
+    let originalStripe = undefined;
+    Object.defineProperty(window, 'Stripe', {
+        get() {
+            return originalStripe;
+        },
+        set(val) {
+            originalStripe = wrapStripe(val);
+        },
+        configurable: true,
+    });
+}
+
 import paymentForm from '@payment/js/payment_form';
 
 paymentForm.include({
@@ -8,6 +49,8 @@ paymentForm.include({
         if (providerCode !== 'stripe') {
             return;
         }
+        this.detectedBrand = null;
+
         // Handle both tokens and payment methods
         const radio = document.querySelector('input[name="o_payment_radio"]:checked');
         const paymentOptionType = radio?.dataset.paymentOptionType;
@@ -36,12 +79,60 @@ paymentForm.include({
                 partnerCountryId,
                 methodCode
             );
+
             if (paymentOptionType === 'token') {
-                // Handle saved token
+                // Handle saved token (brand is already known)
                 this._displayTokenFeeBadge(radio, calculatedFees, providerData);
-            } else {
-                // Handle payment method
+            } else if (paymentMethodCode !== 'card') {
+                // For non-card static payment methods (like ACH), display the badge immediately
                 this._displayPaymentMethodFeeBadge(radio, calculatedFees);
+            } else {
+                // For new cards, clear any initial default fee badge so it remains hidden initially
+                const inlineForm = this._getInlineForm(radio);
+                const stripeInlineForm = inlineForm?.querySelector('[name="o_stripe_element_container"]');
+                const existingBadge = stripeInlineForm?.querySelector('.stripe-fees-badge');
+                if (existingBadge) existingBadge.remove();
+
+                const paymentElement = this.stripeElements[paymentOptionId]?.getElement('payment');
+                if (paymentElement) {
+                    paymentElement.on('change', async (event) => {
+                        const currentRawAmount = this.el?.getAttribute('data-amount') || this.paymentContext.amount;
+                        const currentBaseAmount = this._parseAmount(currentRawAmount);
+
+                        if (event.complete) {
+                            try {
+                                const { error: submitError } = await this.stripeElements[paymentOptionId].submit();
+                                if (submitError) {
+                                    console.warn('[Stripe Badge] submit error:', submitError);
+                                    return;
+                                }
+                                const result = await this.stripeJS.createPaymentMethod({
+                                    elements: this.stripeElements[paymentOptionId],
+                                });
+                                if (result.paymentMethod && result.paymentMethod.card) {
+                                    const brand = (result.paymentMethod.card.brand || '').toLowerCase();
+                                    this.detectedBrand = brand;
+
+                                    const updatedFees = this._calculateFees(
+                                        currentBaseAmount,
+                                        providerData,
+                                        companyCountryId,
+                                        partnerCountryId,
+                                        brand
+                                    );
+                                    this._displayPaymentMethodFeeBadge(radio, updatedFees);
+                                }
+                            } catch (e) {
+                                console.error('[Stripe Badge] Error tokenizing card for brand detection:', e);
+                            }
+                        } else {
+                            // Reset if details are modified/incomplete
+                            this.detectedBrand = null;
+                            const badge = stripeInlineForm?.querySelector('.stripe-fees-badge');
+                            if (badge) badge.remove();
+                        }
+                    });
+                }
             }
         }
     },
@@ -275,4 +366,13 @@ paymentForm.include({
         updateBadgePosition();
         console.log('[Stripe Badge] Payment method badge displayed:', calculatedFees);
     },
+
+    _prepareTransactionRouteParams() {
+        const params = this._super(...arguments);
+        if (this.detectedBrand) {
+            params.stripe_card_brand = this.detectedBrand;
+        }
+        return params;
+    },
+
 });
