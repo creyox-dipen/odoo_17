@@ -14,7 +14,7 @@
     with Stripe integration.
     """,
     "license": "OPL-1",
-    "version": "17.0.0.0",
+    "version": "17.0.0.1",
     "description": """
     <h1>Stripe Advanced Payment Fees for Odoo – Domestic & International Fee Automation</h1>
     <p>The Stripe Advanced Payment Fees module for Odoo automatically calculates and applies Stripe transaction fees during checkout. Businesses can configure different fee rules for each Stripe payment method, ensuring accurate charges for every payment option. The module also supports domestic and international fee logic based on the customer’s shipping country, allowing companies to apply different rates for local and global transactions. If a payment method does not have a specific rule configured, the system automatically applies a default fee method to ensure continuous and error-free fee calculation.</p>

@@ -28,7 +28,12 @@ class PaymentTransaction(models.Model):
             total_percent_fees = 0.0
 
             # Determine if international fees should apply
-            partner_country = self.partner_id.country_id
+            sale_order = self.sale_order_ids[:1]
+            partner_country = (
+                sale_order.partner_shipping_id.country_id
+                if sale_order and sale_order.partner_shipping_id
+                else self.partner_id.country_id
+            )
             company_country = self.company_id.country_id
             is_international = (
                 partner_country
