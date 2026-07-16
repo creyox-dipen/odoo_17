@@ -90,7 +90,7 @@ paymentForm.include({
                 // For new cards, clear any initial default fee badge so it remains hidden initially
                 const inlineForm = this._getInlineForm(radio);
                 const stripeInlineForm = inlineForm?.querySelector('[name="o_stripe_element_container"]');
-                const existingBadge = stripeInlineForm?.querySelector('.stripe-fees-badge');
+                const existingBadge = inlineForm?.querySelector('.stripe-fees-badge');
                 if (existingBadge) existingBadge.remove();
 
                 const paymentElement = this.stripeElements[paymentOptionId]?.getElement('payment');
@@ -128,7 +128,7 @@ paymentForm.include({
                         } else {
                             // Reset if details are modified/incomplete
                             this.detectedBrand = null;
-                            const badge = stripeInlineForm?.querySelector('.stripe-fees-badge');
+                            const badge = inlineForm?.querySelector('.stripe-fees-badge');
                             if (badge) badge.remove();
                         }
                     });
@@ -333,7 +333,7 @@ paymentForm.include({
             return;
         }
         // Remove existing badge
-        const existingBadge = stripeInlineForm.querySelector('.stripe-fees-badge');
+        const existingBadge = inlineForm.querySelector('.stripe-fees-badge');
         if (existingBadge) existingBadge.remove();
 
         if (calculatedFees <= 0) {
@@ -346,24 +346,13 @@ paymentForm.include({
             stripeInlineForm.dataset['stripeInlineFormValues']
         );
         const currencySymbol = stripeInlineFormValues.currency_symbol || '$';
-        // Create new badge
-        const badgeDiv = document.createElement("div");
-        badgeDiv.className = 'stripe-fees-badge';
+        // Create badge as a normal block element and insert it directly after the stripe container
+        // so it sits in the natural gap between the Stripe form and the "Secured by Stripe" row
+        const badgeDiv = document.createElement('div');
+        badgeDiv.className = 'stripe-fees-badge mt-2';
         badgeDiv.innerHTML = `<span class="badge bg-primary" style="font-size:12px; padding:3px 6px;">+ ${currencySymbol}${calculatedFees.toFixed(2)} Fees</span>`;
-        badgeDiv.style.position = "absolute";
-        badgeDiv.style.zIndex = "9999";
-        badgeDiv.style.pointerEvents = "none";
-        stripeInlineForm.style.position = "relative";
-        stripeInlineForm.appendChild(badgeDiv);
-        // Position badge
-        const updateBadgePosition = () => {
-            const rect = iframe.getBoundingClientRect();
-            const parentRect = stripeInlineForm.getBoundingClientRect();
-            badgeDiv.style.top = rect.top - parentRect.top + 90 + "px";
-            badgeDiv.style.left = rect.left - parentRect.left + 130 + "px";
-            requestAnimationFrame(updateBadgePosition);
-        };
-        updateBadgePosition();
+        stripeInlineForm.insertAdjacentElement('afterend', badgeDiv);
+
         console.log('[Stripe Badge] Payment method badge displayed:', calculatedFees);
     },
 
