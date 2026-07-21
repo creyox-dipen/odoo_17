@@ -63,7 +63,7 @@ class StripeStatementCollection(StripeController):
         )
 
         # Find matching payment.transaction using payment_intent
-        request.env["payment.transaction"].sudo()._cron_post_process()
+        request.env["payment.transaction"].sudo()._cron_finalize_post_processing()
         payment_intent_id = stripe_object.get("payment_intent")
         transaction = (
             env["payment.transaction"]
@@ -146,7 +146,7 @@ class StripeStatementCollection(StripeController):
             )  # Convert from cents
             logger.info("BT : %s",bt)
             logger.info("type : %s",type(bt))
-            currency_code = getattr(bt, "currency", "usd").upper()
+            currency_code = stripe_object.get("currency", getattr(bt, "currency", "usd")).upper()
 
             # Handle currency
             charge_currency = (
@@ -165,10 +165,11 @@ class StripeStatementCollection(StripeController):
                 amount_currency = 0.0
                 foreign_currency_id = False
             else:
+                original_amount = amount
                 amount = charge_currency._convert(
-                    amount, journal_currency, journal.company_id, charge_date
+                    original_amount, journal_currency, journal.company_id, charge_date
                 )
-                amount_currency = amount
+                amount_currency = original_amount
                 foreign_currency_id = charge_currency.id
 
             # Fetch the Outstanding Receipt account
@@ -212,6 +213,7 @@ class StripeStatementCollection(StripeController):
             if balance_transaction_id:
                 try:
                     bt = stripe.BalanceTransaction.retrieve(balance_transaction_id)
+                    logger.info("BT for fee  : %s",bt)
                     fee_amount = getattr(bt, "fee", 0) / 100.0  # Convert from cents
                     fee_currency_code = getattr(bt, "currency", "usd").upper()
                     fee_currency = (
@@ -367,7 +369,8 @@ class StripeStatementCollection(StripeController):
             bt = stripe.BalanceTransaction.retrieve(balance_transaction_id)
             net_amount = getattr(bt, "net", 0) / 100.0
             fee_amount = getattr(bt, "fee", 0) / 100.0
-            currency_code = getattr(bt, "currency", "usd").upper()
+            fee_currency_code = getattr(bt, "currency", "usd").upper()
+            currency_code = stripe_object.get("currency", fee_currency_code).upper()
 
             refunds = stripe_object.get("refunds", {}).get("data", [])
             if refunds:
@@ -407,7 +410,7 @@ class StripeStatementCollection(StripeController):
                 .search(
                     [
                         ("code", "=", "101404"),
-                        ("company_ids", "in", [journal.company_id.id]),
+                        ("company_id", "=", journal.company_id.id),
                     ],
                     limit=1,
                 )
@@ -472,10 +475,11 @@ class StripeStatementCollection(StripeController):
                         logger.info("Found invoice: %s", invoice.name)
 
                         # Get related credit notes via reversal link only
-                        credit_note = invoice.reversal_move_ids.filtered(
-                            lambda m: m.state == "posted"
-                            and m.amount_total == invoice.amount_total
-                        )[:1]
+                        credit_note = env["account.move"].sudo().search([
+                            ("reversed_entry_id", "=", invoice.id),
+                            ("state", "=", "posted"),
+                            ("amount_total", "=", invoice.amount_total)
+                        ], limit=1)
 
                         if credit_note:
                             logger.info(
@@ -605,13 +609,13 @@ class StripeStatementCollection(StripeController):
                                 "Attempting automatic reconciliation using bank.rec.widget"
                             )
 
-                            # Get the 101404 counterpart line in the statement move
-                            stmt_101404_line = refund_line.move_id.line_ids.filtered(
-                                lambda l: l.account_id.code == "101404"
+                            # Get the counterpart line in the statement move (usually Debtors or Suspense)
+                            stmt_counterpart_line = refund_line.move_id.line_ids.filtered(
+                                lambda l: l.account_id != journal.default_account_id
                                 and not l.reconciled
                             )
 
-                            if stmt_101404_line and receivable_lines:
+                            if stmt_counterpart_line and receivable_lines:
                                 try:
                                     target_aml = receivable_lines[0]
                                     target_account = target_aml.account_id
@@ -619,8 +623,8 @@ class StripeStatementCollection(StripeController):
                                     # Step 1: Put move in draft to allow account change
                                     refund_line.move_id.button_draft()
 
-                                    # Step 2: Swap 101404 → Account Receivable to match the credit note
-                                    stmt_101404_line.write(
+                                    # Step 2: Swap temporary account → Account Receivable to match the credit note
+                                    stmt_counterpart_line.write(
                                         {"account_id": target_account.id}
                                     )
 
@@ -732,15 +736,15 @@ class StripeStatementCollection(StripeController):
                                             "Attempting to reconcile bank statement with payment outstanding line"
                                         )
 
-                                        stmt_101404_line = (
+                                        stmt_counterpart_line = (
                                             refund_line.move_id.line_ids.filtered(
-                                                lambda l: l.account_id.code == "101404"
+                                                lambda l: l.account_id != journal.default_account_id
                                                 and not l.reconciled
                                             )
                                         )
 
                                         if (
-                                            stmt_101404_line
+                                            stmt_counterpart_line
                                             and payment_outstanding_lines
                                         ):
                                             try:
@@ -753,11 +757,11 @@ class StripeStatementCollection(StripeController):
 
                                                 # Only swap if accounts differ (defensive)
                                                 if (
-                                                    stmt_101404_line[0].account_id
+                                                    stmt_counterpart_line[0].account_id
                                                     != target_account
                                                 ):
                                                     refund_line.move_id.button_draft()
-                                                    stmt_101404_line.write(
+                                                    stmt_counterpart_line.write(
                                                         {
                                                             "account_id": target_account.id
                                                         }
@@ -826,19 +830,27 @@ class StripeStatementCollection(StripeController):
                     "Stripe Fees Expense account not configured, skipping fee reversal"
                 )
             elif fee_amount > 0:
-                if refund_currency == journal_currency:
+                fee_currency = (
+                    env["res.currency"]
+                    .sudo()
+                    .search([("name", "=", fee_currency_code)], limit=1)
+                )
+                if not fee_currency:
+                    fee_currency = refund_currency
+
+                if fee_currency == journal_currency:
                     fee_balance_amount = fee_amount  # POSITIVE → credit expense
                     fee_amount_currency = 0.0
                     fee_foreign_currency_id = False
                 else:
-                    fee_balance_amount = refund_currency._convert(
+                    fee_balance_amount = fee_currency._convert(
                         fee_amount,
                         journal_currency,
                         journal.company_id,
                         refund_date,
                     )
                     fee_amount_currency = fee_amount
-                    fee_foreign_currency_id = refund_currency.id
+                    fee_foreign_currency_id = fee_currency.id
 
                 fee_reverse_vals = {
                     "statement_id": statement.id,
