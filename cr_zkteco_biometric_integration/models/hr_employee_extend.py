@@ -628,71 +628,12 @@ class HrEmployeeExtend(models.Model):
                 if checkout_utc > att.check_in:
                     att.write({"check_out": checkout_utc})
 
-    def get_attendance_status_for_date(self, check_date, user_tz):
-        """Determine the attendance/absence status of an employee for a specific date."""
-        self.ensure_one()
-        import pytz
-        from datetime import datetime, time
-
-        logger.info("Determining biometric status for employee %s on date %s", self.name, check_date)
-
-        # 1. Check if present
-        # Start and End of the check_date in UTC
-        start_utc = user_tz.localize(datetime.combine(check_date, time.min)).astimezone(pytz.utc).replace(tzinfo=None)
-        end_utc = user_tz.localize(datetime.combine(check_date, time.max)).astimezone(pytz.utc).replace(tzinfo=None)
-
-        attendance = self.env["hr.attendance"].sudo().search_count([
-            ("employee_id", "=", self.id),
-            ("check_in", "<=", end_utc),
-            "|",
-            ("check_out", ">=", start_utc),
-            ("check_out", "=", False),
-        ])
-        if attendance > 0:
-            return "present", False
-
-        # 2. Check if it's a scheduled working day
-        calendar = self.resource_calendar_id
-        if calendar:
-            day_start = user_tz.localize(datetime.combine(check_date, time.min))
-            day_end = user_tz.localize(datetime.combine(check_date, time.max))
-
-            intervals = calendar._attendance_intervals_batch(
-                day_start, day_end, self.resource_id
-            )[self.resource_id.id]
-
-            if not intervals:
-                return "weekend", False
-
-        # 3. Check for approved leaves (hr.leave)
-        if self.env.registry.get("hr.leave"):
-            leave = self.env["hr.leave"].sudo().search([
-                ("employee_id", "=", self.id),
-                ("state", "=", "validate"),  # Approved leaves only
-                ("date_from", "<=", end_utc),
-                ("date_to", ">=", start_utc),
-            ], limit=1)
-            if leave:
-                return "leave", leave.holiday_status_id.name or _("Approved Leave")
-
-        # 4. Check for public holidays (resource.calendar.leaves)
-        if calendar:
-            day_start_naive = day_start.replace(tzinfo=None)
-            day_end_naive = day_end.replace(tzinfo=None)
-            holiday = self.env["resource.calendar.leaves"].sudo().search([
-                ("calendar_id", "=", calendar.id),
-                ("resource_id", "=", False),  # Global holiday
-                ("date_from", "<=", day_end_naive),
-                ("date_to", ">=", day_start_naive),
-            ], limit=1)
-            if holiday:
-                return "holiday", holiday.name or _("Public Holiday")
-
-        return "absent", False
-
     def get_attendance_statuses_for_date_batch(self, check_date, user_tz):
-        """Determine attendance/absence status for a batch of employees on a specific date."""
-        logger.info("Determining batch biometric statuses for %s employees on date %s", len(self), check_date)
+        """
+        Batch check attendance, leaves, and public holiday status for a recordset of employees on a single date.
+        Returns a dict mapping: employee_id -> (status_string, detail_reason)
+        Status string can be: 'present', 'leave', 'holiday', 'weekend', 'absent'
+        """
         import pytz
         from datetime import datetime, time
 
