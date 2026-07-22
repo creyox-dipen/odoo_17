@@ -4,7 +4,8 @@
     "name": "Stripe Statement Collection | Stripe Auto Bank Statements | Stripe Auto Import Transactions | Auto Sync Stripe Transactions",
     "author": "Creyox Technologies",
     "website": "https://www.creyox.com",
-    "support": "support@creyox.com",
+    "support": "https://www.creyox.com/helpdesk",
+    "live_test_url": "https://www.creyox.com/helpdesk?module_tech_name=cr_ent_stripe_statements&version=17.0",
     "category": "Accounting",
     "summary": """
     This module enables you to automatically import Stripe transactions into Odoo, using webhook responses. Whenever a charge, refund, or payout occurs in Stripe, the module listens for the event and creates corresponding bank statement lines in Odoo. At the same time, it also records fees as separate lines, links them to a Stripe fee partner, and readies everything for reconciliation with existing payments.

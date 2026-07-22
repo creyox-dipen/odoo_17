@@ -144,9 +144,11 @@ class StripeStatementCollection(StripeController):
             amount = charge_amount = (
                 stripe_object.get("amount", 0) / 100.0
             )  # Convert from cents
-            logger.info("BT : %s",bt)
-            logger.info("type : %s",type(bt))
-            currency_code = stripe_object.get("currency", getattr(bt, "currency", "usd")).upper()
+            logger.info("BT : %s", bt)
+            logger.info("type : %s", type(bt))
+            currency_code = stripe_object.get(
+                "currency", getattr(bt, "currency", "usd")
+            ).upper()
 
             # Handle currency
             charge_currency = (
@@ -213,7 +215,7 @@ class StripeStatementCollection(StripeController):
             if balance_transaction_id:
                 try:
                     bt = stripe.BalanceTransaction.retrieve(balance_transaction_id)
-                    logger.info("BT for fee  : %s",bt)
+                    logger.info("BT for fee  : %s", bt)
                     fee_amount = getattr(bt, "fee", 0) / 100.0  # Convert from cents
                     fee_currency_code = getattr(bt, "currency", "usd").upper()
                     fee_currency = (
@@ -461,7 +463,11 @@ class StripeStatementCollection(StripeController):
                     # 2. Fallback to searching by reference if invoice_ids was empty
                     if not invoice:
                         invoice_ref = transaction.reference
-                        clean_ref = invoice_ref.rsplit("-", 1)[0] if "-" in invoice_ref else invoice_ref
+                        clean_ref = (
+                            invoice_ref.rsplit("-", 1)[0]
+                            if "-" in invoice_ref
+                            else invoice_ref
+                        )
                         invoice = (
                             env["account.move"]
                             .sudo()
@@ -484,11 +490,18 @@ class StripeStatementCollection(StripeController):
                         logger.info("Found invoice: %s", invoice.name)
 
                         # Get related credit notes via reversal link only
-                        credit_note = env["account.move"].sudo().search([
-                            ("reversed_entry_id", "=", invoice.id),
-                            ("state", "=", "posted"),
-                            ("amount_total", "=", invoice.amount_total)
-                        ], limit=1)
+                        credit_note = (
+                            env["account.move"]
+                            .sudo()
+                            .search(
+                                [
+                                    ("reversed_entry_id", "=", invoice.id),
+                                    ("state", "=", "posted"),
+                                    ("amount_total", "=", invoice.amount_total),
+                                ],
+                                limit=1,
+                            )
+                        )
 
                         if credit_note:
                             logger.info(
@@ -619,9 +632,11 @@ class StripeStatementCollection(StripeController):
                             )
 
                             # Get the counterpart line in the statement move (usually Debtors or Suspense)
-                            stmt_counterpart_line = refund_line.move_id.line_ids.filtered(
-                                lambda l: l.account_id != journal.default_account_id
-                                and not l.reconciled
+                            stmt_counterpart_line = (
+                                refund_line.move_id.line_ids.filtered(
+                                    lambda l: l.account_id != journal.default_account_id
+                                    and not l.reconciled
+                                )
                             )
 
                             if stmt_counterpart_line and receivable_lines:
@@ -745,7 +760,8 @@ class StripeStatementCollection(StripeController):
 
                                         stmt_counterpart_line = (
                                             refund_line.move_id.line_ids.filtered(
-                                                lambda l: l.account_id != journal.default_account_id
+                                                lambda l: l.account_id
+                                                != journal.default_account_id
                                                 and not l.reconciled
                                             )
                                         )
