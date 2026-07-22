@@ -455,20 +455,29 @@ class StripeStatementCollection(StripeController):
                     )
 
                     # Find the original invoice
-                    invoice = (
-                        env["account.move"]
-                        .sudo()
-                        .search(
-                            [
-                                ("move_type", "=", "out_invoice"),
-                                ("state", "=", "posted"),
-                                "|",
-                                ("name", "=", invoice_ref),
-                                ("ref", "=", invoice_ref),
-                            ],
-                            limit=1,
+                    invoice = transaction.invoice_ids.filtered(
+                        lambda m: m.move_type == "out_invoice" and m.state == "posted"
+                    )[:1]
+                    # 2. Fallback to searching by reference if invoice_ids was empty
+                    if not invoice:
+                        invoice_ref = transaction.reference
+                        clean_ref = invoice_ref.rsplit("-", 1)[0] if "-" in invoice_ref else invoice_ref
+                        invoice = (
+                            env["account.move"]
+                            .sudo()
+                            .search(
+                                [
+                                    ("move_type", "=", "out_invoice"),
+                                    ("state", "=", "posted"),
+                                    "|",
+                                    "|",
+                                    ("name", "=", invoice_ref),
+                                    ("name", "=", clean_ref),
+                                    ("ref", "=", invoice_ref),
+                                ],
+                                limit=1,
+                            )
                         )
-                    )
 
                     credit_note = env["account.move"]
                     if invoice:
@@ -719,9 +728,7 @@ class StripeStatementCollection(StripeController):
                                     # For outbound payments (refunds), we're looking for the Outstanding Payment line
                                     payment_outstanding_lines = (
                                         payment_move.line_ids.filtered(
-                                            lambda l: l.account_id.code
-                                            == "101404"  # Outstanding Payment account
-                                            and not l.reconciled
+                                            lambda l: not l.reconciled
                                             and l.balance != 0
                                         )
                                     )
