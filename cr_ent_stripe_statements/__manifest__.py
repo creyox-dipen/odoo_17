@@ -86,7 +86,7 @@
     <p>Watch the YouTube video: <a href="https://youtu.be/z8x2s7jk0sc">Stripe Statement Collection</a></p>
     <p>Read our blog: <a href="https://creyox.com/blog">https://creyox.com/blog</a></p>
     """,
-    "depends": ["base", "payment_stripe", "accountant", "account_asset"],
+    "depends": ["base", "payment_stripe", "account_accountant", "account_asset"],
     "external_dependencies": {"python": ["stripe"]},
     "data": [
         "security/ir.model.access.csv",
