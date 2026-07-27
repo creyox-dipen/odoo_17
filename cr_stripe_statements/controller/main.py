@@ -168,21 +168,19 @@ class StripeStatementCollection(StripeController):
                 amount_currency = amount
                 foreign_currency_id = charge_currency.id
 
-            # Fetch the Account Receivable account
-            account_receivable = (
-                request.env["account.account"]
-                .sudo()
-                .search(
-                    [
-                        ("code", "=", "121000"),
-                        ("company_id", "in", [journal.company_id.id]),
-                    ],
-                    limit=1,
-                )
+            # Fetch the invoice customer's receivable account
+            # transaction.partner_id is the logged-in user who paid, not the invoice customer
+            invoice = transaction.invoice_ids[:1]
+            invoice_partner = invoice.partner_id if invoice else transaction.partner_id
+            account_receivable = invoice_partner.property_account_receivable_id if invoice_partner else False
+            logger.info(
+                "Using receivable account %s for partner %s",
+                account_receivable.code if account_receivable else False,
+                invoice_partner.name if invoice_partner else False,
             )
 
             if not account_receivable:
-                raise UserError("Account Receivable not found for the company!")
+                raise UserError("Account Receivable not found for the invoice customer!")
 
             # Create bank statement line for the net amount
             line_vals = {
@@ -191,9 +189,7 @@ class StripeStatementCollection(StripeController):
                 "amount": amount,
                 "foreign_currency_id": foreign_currency_id,
                 "amount_currency": amount_currency,
-                "partner_id": (
-                    transaction.partner_id.id if transaction.partner_id else False
-                ),
+                "partner_id": invoice_partner.id if invoice_partner else False,
                 "ref": stripe_object.get("id"),
                 "payment_ref": stripe_object.get("description") or payment_intent_id,
                 "journal_id": journal.id,
@@ -380,21 +376,19 @@ class StripeStatementCollection(StripeController):
                 amount_currency = -net_amount
                 foreign_currency_id = refund_currency.id
 
-            # Fetch the Account Receivable account
-            account_receivable = (
-                env["account.account"]
-                .sudo()
-                .search(
-                    [
-                        ("code", "=", "121000"),
-                        ("company_id", "in", [journal.company_id.id]),
-                    ],
-                    limit=1,
-                )
+            # Fetch the invoice customer's receivable account
+            # transaction.partner_id is the logged-in user who paid, not the invoice customer
+            invoice = transaction.invoice_ids[:1]
+            invoice_partner = invoice.partner_id if invoice else transaction.partner_id
+            account_receivable = invoice_partner.property_account_receivable_id if invoice_partner else False
+            logger.info(
+                "Using receivable account %s for partner %s",
+                account_receivable.code if account_receivable else False,
+                invoice_partner.name if invoice_partner else False,
             )
 
             if not account_receivable:
-                raise UserError("Account Receivable not found for the company!")
+                raise UserError("Account Receivable not found for the invoice customer!")
 
             # Create bank statement line for the net refund amount (negative)
             line_vals = {
