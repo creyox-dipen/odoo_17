@@ -95,25 +95,20 @@ class EupagoRefundWizard(models.TransientModel):
                     # clear it to prevent pointing to the original inbound payment.
                     refund_tx.sudo().payment_id = False
 
-                    # Use Odoo's standard account.payment.register wizard applied to the Credit Note.
-                    # This is the correct Odoo-native approach — it handles amount, payment type,
-                    # and auto-reconciliation correctly without any manual accounting manipulation.
-                    payment_register = self.env['account.payment.register'].with_context(
-                        active_model='account.move',
-                        active_ids=credit_note.ids,
-                    ).create({
-                        'journal_id': refund_tx.provider_id.journal_id.id,
-                        'amount': abs(refund_tx.amount),
-                        'currency_id': refund_tx.currency_id.id,
-                        'payment_date': fields.Date.context_today(self),
-                        'communication': refund_tx.reference,
-                    })
-                    payments = payment_register._create_payments()
-                    _logger.info(
-                        "euPago wizard: registered payment(s) %s and reconciled with Credit Note %s",
-                        payments.mapped('name'),
-                        credit_note.name,
-                    )
+                    # The Credit Note is already created and posted by _generate_refund_credit_note()
+                    # which ran inside _set_done(). For a euPago API refund, the money goes back
+                    # to the customer via euPago — there is no separate Odoo payment entry to create.
+                    # Calling _finalize_post_processing() would try to create a new account.payment
+                    # and reconcile it against the already-posted Credit Note, which causes:
+                    # "You cannot edit the journal of an account move if it has been posted once."
+                    # So we simply mark the transaction as post-processed.
+                    if not refund_tx.is_post_processed:
+                        refund_tx.sudo().is_post_processed = True
+                        _logger.info(
+                            "euPago wizard: marked refund tx %s as post-processed (Credit Note %s already posted)",
+                            refund_tx.reference,
+                            credit_note.name,
+                        )
             
         except UserError:
             # Re-raise standard Odoo errors (like our own UserError)

@@ -1,7 +1,6 @@
 /** @odoo-module **/
 
 import paymentForm from '@payment/js/payment_form';
-import { rpc } from "@web/core/network/rpc";
 
 paymentForm.include({
     async _prepareInlineForm(providerId, providerCode, paymentOptionId, paymentMethodCode, flow) {
@@ -13,7 +12,7 @@ paymentForm.include({
         }
 
         const radio = document.querySelector('input[name="o_payment_radio"]:checked');
-        const paymentOptionType = radio?.dataset.paymentOptionType;
+        if (!radio) return;
 
         // Fetch provider configuration
         const providerData = await this._fetchEupagoProviderConfig(providerCode);
@@ -23,7 +22,7 @@ paymentForm.include({
         const { companyCountryId, deliveryCountryId } = await this._fetchEupagoCountryData(providerData);
 
         // Calculate fees
-        if (providerData.cr_eupago_is_extra_fees == true) {
+        if (providerData.cr_eupago_is_extra_fees) {
             const baseAmount = parseFloat(this.paymentContext.amount || 0);
             const calculatedFees = this._calculateEupagoFees(
                 baseAmount,
@@ -40,14 +39,10 @@ paymentForm.include({
 
     async _fetchEupagoProviderConfig(providerCode) {
         try {
-            const response = await fetch('/custom/eupago/provider_config', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ params: { provider_code: providerCode } }),
+            const provider = await this.rpc('/custom/eupago/provider_config', {
+                provider_code: providerCode
             });
-            const data = await response.json();
-            const provider = data.result || {};
-
+            
             if (!provider || !provider.company_id) {
                 console.warn('[euPago Badge] No provider or missing company_id');
                 return null;
@@ -65,13 +60,8 @@ paymentForm.include({
 
         // Fetch company country
         try {
-            const response = await fetch(`/custom/eupago/company_country/${provider.company_id[0] || provider.company_id}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ params: {} }),
-            });
-            const companyData = await response.json();
-            companyCountryId = companyData.result?.country_id || null;
+            const companyData = await this.rpc(`/custom/eupago/company_country/${provider.company_id[0] || provider.company_id}`, {});
+            companyCountryId = companyData?.country_id || null;
         } catch (e) {
             console.error('[euPago Badge] Could not fetch company country:', e);
         }
@@ -80,13 +70,10 @@ paymentForm.include({
         const { docId, isInvoice } = this._extractEupagoDocumentInfo();
         if (docId) {
             try {
-                const response = await fetch(`/custom/eupago/document_shipping_country/${docId}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ params: { is_invoice: isInvoice } }),
+                const docData = await this.rpc(`/custom/eupago/document_shipping_country/${docId}`, {
+                    is_invoice: isInvoice
                 });
-                const docData = await response.json();
-                deliveryCountryId = docData.result?.country_id || null;
+                deliveryCountryId = docData?.country_id || null;
             } catch (error) {
                 console.error('[euPago Badge] Failed to fetch delivery country:', error);
             }
@@ -136,9 +123,9 @@ paymentForm.include({
     _displayEupagoFeeBadge(radio, calculatedFees, providerData) {
         if (!radio) return;
         
-        // Find the label or container associated with this radio button to append the badge
-        // Odoo 16+ payment form structure: <div name="o_payment_option_card">...<label>...</label></div>
-        const container = radio.closest('.o_payment_option_card') || radio.parentElement;
+        // Find the container associated with this radio button.
+        // In Odoo 17, radio is inside a .w-100 flex container.
+        const container = radio.parentElement;
         if (!container) return;
 
         // Remove any existing badge to avoid duplicates
@@ -149,29 +136,33 @@ paymentForm.include({
 
         const currencyId = parseInt(this.paymentContext.currencyId);
 
-        rpc('/web/dataset/call_kw', {
-            model: 'res.currency',
-            method: 'read',
-            args: [[currencyId], ['symbol']],
-            kwargs: {},
-            context: {},
-        }).then(result => {
-            const currencySymbol = result?.[0]?.symbol || '€';
+        if (currencyId && this.orm) {
+            this.orm.read('res.currency', [currencyId], ['symbol']).then(result => {
+                const currencySymbol = result?.[0]?.symbol || '€';
+                this._appendBadge(container, currencySymbol, calculatedFees);
+            }).catch(e => {
+                console.warn('[euPago Badge] Could not fetch currency symbol, using fallback', e);
+                this._appendBadge(container, '€', calculatedFees);
+            });
+        } else {
+            this._appendBadge(container, '€', calculatedFees);
+        }
+    },
 
-            // Create badge
-            const badge = document.createElement('span');
-            badge.className = 'badge bg-primary ms-2 eupago-fees-badge';
-            badge.style.fontSize = '12px';
-            badge.style.padding = '3px 8px';
-            badge.textContent = `+ ${currencySymbol}${calculatedFees.toFixed(2)} Fees`;
+    _appendBadge(container, currencySymbol, calculatedFees) {
+        // Create badge
+        const badge = document.createElement('span');
+        badge.className = 'badge bg-primary ms-2 eupago-fees-badge';
+        badge.style.fontSize = '12px';
+        badge.style.padding = '3px 8px';
+        badge.textContent = `+ ${currencySymbol}${calculatedFees.toFixed(2)} Fees`;
 
-            // Append badge next to the payment option label
-            const label = container.querySelector('label');
-            if (label) {
-                label.appendChild(badge);
-            } else {
-                container.appendChild(badge);
-            }
-        });
+        // Append badge next to the payment option label
+        const label = container.querySelector('.o_payment_option_label') || container.querySelector('label');
+        if (label) {
+            label.appendChild(badge);
+        } else {
+            container.appendChild(badge);
+        }
     }
 });

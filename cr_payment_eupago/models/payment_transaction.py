@@ -822,7 +822,8 @@ class PaymentTransaction(models.Model):
                 _(
                     "Cannot refund: original transaction has no euPago Transaction ID (TRID). "
                     "This usually means the euPago webhook has not arrived yet. "
-                    "Please wait a moment and try again, or process the refund manually in the euPago Backoffice."
+                    "Please wait a moment and try again, or process the refund manually in the euPago Backoffice. "
+                    "Also, ensure that your Webhook URL is properly configured in the euPago Backoffice."
                 )
             )
 
