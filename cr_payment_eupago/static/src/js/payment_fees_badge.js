@@ -4,7 +4,6 @@ import paymentForm from '@payment/js/payment_form';
 
 paymentForm.include({
     async _prepareInlineForm(providerId, providerCode, paymentOptionId, paymentMethodCode, flow) {
-
         await this._super(...arguments);
         // Only process euPago providers
         if (!['eupago_cc', 'eupago_mbway', 'eupago_mbref'].includes(providerCode)) {
@@ -23,7 +22,44 @@ paymentForm.include({
 
         // Calculate fees
         if (providerData.cr_eupago_is_extra_fees) {
-            const baseAmount = parseFloat(this.paymentContext.amount || 0);
+            let amountStr = null;
+            
+            // On eCommerce checkout, the real total is in #amount_total_summary
+            // this.paymentContext.amount sometimes incorrectly contains 0.00 in Odoo 17
+            const totalSummaryEl = document.getElementById('amount_total_summary');
+            if (totalSummaryEl) {
+                const oeSpan = totalSummaryEl.querySelector('.oe_currency_value');
+                amountStr = oeSpan ? oeSpan.textContent : totalSummaryEl.textContent;
+            } else {
+                amountStr = this.paymentContext.amount || "0";
+                
+                if (typeof amountStr === 'string' && amountStr.includes('<')) {
+                    const tempDiv = document.createElement('div');
+                    tempDiv.innerHTML = amountStr;
+                    const oeSpan = tempDiv.querySelector('.oe_currency_value');
+                    amountStr = oeSpan ? oeSpan.textContent : tempDiv.textContent;
+                }
+            }
+            
+            // Clean up the string to ensure it parses correctly across different locales (1,234.56 vs 1.234,56)
+            if (typeof amountStr === 'string') {
+                amountStr = amountStr.replace(/\s+/g, '').replace(/&nbsp;/g, '').replace(/[^\d.,]/g, '');
+                if (amountStr.includes(',') && !amountStr.includes('.')) {
+                    amountStr = amountStr.replace(',', '.');
+                } else if (amountStr.includes(',') && amountStr.includes('.')) {
+                    if (amountStr.lastIndexOf(',') > amountStr.lastIndexOf('.')) {
+                        amountStr = amountStr.replace(/\./g, '').replace(',', '.');
+                    } else {
+                        amountStr = amountStr.replace(/,/g, '');
+                    }
+                }
+            }
+
+            let baseAmount = parseFloat(amountStr);
+            if (isNaN(baseAmount)) {
+                baseAmount = 0;
+            }
+
             const calculatedFees = this._calculateEupagoFees(
                 baseAmount,
                 providerData,
@@ -68,15 +104,16 @@ paymentForm.include({
 
         // Fetch delivery country
         const { docId, isInvoice } = this._extractEupagoDocumentInfo();
-        if (docId) {
-            try {
-                const docData = await this.rpc(`/custom/eupago/document_shipping_country/${docId}`, {
-                    is_invoice: isInvoice
-                });
-                deliveryCountryId = docData?.country_id || null;
-            } catch (error) {
-                console.error('[euPago Badge] Failed to fetch delivery country:', error);
-            }
+        try {
+            const endpoint = docId 
+                ? `/custom/eupago/document_shipping_country/${docId}` 
+                : `/custom/eupago/document_shipping_country`;
+            const docData = await this.rpc(endpoint, {
+                is_invoice: isInvoice
+            });
+            deliveryCountryId = docData?.country_id || null;
+        } catch (error) {
+            console.error('[euPago Badge] Failed to fetch delivery country:', error);
         }
 
         return { companyCountryId, deliveryCountryId };

@@ -267,12 +267,24 @@ class EupagoController(http.Controller):
         return {"country_id": company.country_id.id if company.country_id else None}
 
     @http.route(
-        ["/custom/eupago/document_shipping_country/<int:doc_id>"],
+        [
+            "/custom/eupago/document_shipping_country",
+            "/custom/eupago/document_shipping_country/<int:doc_id>"
+        ],
         type="json",
         auth="public",
         csrf=False,
     )
-    def get_document_shipping_country(self, doc_id, is_invoice=False):
+    def get_document_shipping_country(self, doc_id=None, is_invoice=False):
+        if not doc_id:
+            # Try to get the active website order for eCommerce checkout
+            if hasattr(request, 'website') and request.website:
+                order = request.website.sale_get_order()
+                if order:
+                    partner = order.partner_shipping_id or order.partner_id
+                    return {"country_id": partner.country_id.id if partner and partner.country_id else None}
+            return {"country_id": None}
+
         if is_invoice:
             invoice = request.env["account.move"].sudo().browse(doc_id)
             if hasattr(invoice, "partner_shipping_id") and invoice.partner_shipping_id:

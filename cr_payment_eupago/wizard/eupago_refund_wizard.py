@@ -98,14 +98,15 @@ class EupagoRefundWizard(models.TransientModel):
                     # The Credit Note is already created and posted by _generate_refund_credit_note()
                     # which ran inside _set_done(). For a euPago API refund, the money goes back
                     # to the customer via euPago — there is no separate Odoo payment entry to create.
-                    # Calling _finalize_post_processing() would try to create a new account.payment
-                    # and reconcile it against the already-posted Credit Note, which causes:
-                    # "You cannot edit the journal of an account move if it has been posted once."
-                    # So we simply mark the transaction as post-processed.
+                    # Trigger Odoo's native post-processing for the transaction.
+                    # CRITICAL: We MUST clear default_move_id from the context. 
+                    # The wizard was opened with default_move_id=invoice.id.
+                    # If we don't clear it, account.payment.create() will try to use the existing 
+                    # invoice move instead of creating a new one, causing a journal edit error!
                     if not refund_tx.is_post_processed:
-                        refund_tx.sudo().is_post_processed = True
+                        refund_tx.with_context(default_move_id=False)._finalize_post_processing()
                         _logger.info(
-                            "euPago wizard: marked refund tx %s as post-processed (Credit Note %s already posted)",
+                            "euPago wizard: successfully completed post-processing for refund tx %s (Credit Note %s reconciled)",
                             refund_tx.reference,
                             credit_note.name,
                         )

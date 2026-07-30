@@ -1,7 +1,7 @@
 /** @odoo-module **/
 
 import paymentForm from '@payment/js/payment_form';
-import { rpc, RPCError } from '@web/core/network/rpc';
+import { RPCError } from '@web/core/network/rpc_service';
 import { _t } from "@web/core/l10n/translation";
 
 paymentForm.include({
@@ -32,7 +32,7 @@ paymentForm.include({
 
         // Call our custom controller to process the MB WAY payment
         try {
-            await rpc('/payment/cr_eupago/mbway/pay', {
+            await this.rpc('/payment/cr_eupago/mbway/pay', {
                 'reference': processingValues.reference,
                 'phone': phone,
             });
@@ -85,7 +85,7 @@ paymentForm.include({
             }
 
             try {
-                const response = await rpc('/payment/cr_eupago/mbway/status', {
+                const response = await this.rpc('/payment/cr_eupago/mbway/status', {
                     'ref': reference,
                 });
                 if (response.state === 'done') {
