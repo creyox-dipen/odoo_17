@@ -63,7 +63,7 @@ class StripeStatementCollection(StripeController):
         )
 
         # Find matching payment.transaction using payment_intent
-        request.env["payment.transaction"].sudo()._cron_post_process()
+        request.env["payment.transaction"].sudo()._cron_finalize_post_processing()
         payment_intent_id = stripe_object.get("payment_intent")
         transaction = (
             env["payment.transaction"]
@@ -434,7 +434,7 @@ class StripeStatementCollection(StripeController):
                 .search(
                     [
                         ("code", "=", "101404"),
-                        ("company_ids", "in", [journal.company_id.id]),
+                        ("company_id", "=", journal.company_id.id),
                     ],
                     limit=1,
                 )
