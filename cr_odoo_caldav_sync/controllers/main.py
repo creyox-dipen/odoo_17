@@ -194,7 +194,7 @@ class CalDavWebhookController(http.Controller):
             if account:
                 _logger.info("Google Webhook: Triggering sync for account '%s' (id=%s).", account.name, account.id)
                 try:
-                    account.action_sync_now()
+                    account.with_user(1).action_sync_now()
                 except Exception as e:
                     _logger.error("Google Webhook: Sync failed for account %s: %s", account.id, str(e))
                 return request.make_response("OK", status=200)
