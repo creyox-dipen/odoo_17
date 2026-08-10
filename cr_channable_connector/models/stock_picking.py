@@ -30,5 +30,5 @@ class StockPicking(models.Model):
                 try:
                     picking.sale_id.action_channable_notify_shipped()
                 except Exception as e:
-                    _logger.warning("Immediate Channable shipment sync failed for order %s: %s", picking.sale_id.name, str(e))
+                    _logger.info("Immediate Channable shipment sync failed for order %s: %s", picking.sale_id.name, str(e))
         return res
