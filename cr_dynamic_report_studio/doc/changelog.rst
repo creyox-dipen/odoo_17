@@ -2,7 +2,7 @@
 -------------------------------
 - Initial release
 
-17.0.0.1 (Date: 1st Sep, 2026)
+17.0.0.1 (Date: 2nd Sep, 2026)
 -------------------------------
 - [Fix] Resolved resource image rendering issues under bin_size context.
 - [Fix] Added support for converting and rendering .ico icon format.
