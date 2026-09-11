@@ -9,7 +9,7 @@
         <field name="model">chargebee.subscription</field>
         <field name="arch" type="xml">
             <tree>
-                <button name="action_sync_subscriptions" type="object" string="Sync Subscriptions" class="btn-primary"/>
+                <button name="action_sync_subscriptions" type="object" string="Sync Subscriptions" class="btn btn-primary"/>
                 <field name="name"/>
                 <field name="customer_id"/>
                 <field name="status"/>
@@ -27,9 +27,9 @@
         <field name="arch" type="xml">
             <form>
                 <header>
-                    <button name="action_upgrade_subscription" type="object" string="Upgrade" class="btn-success"/>
-                    <button name="action_downgrade_subscription" type="object" string="Downgrade" class="btn-warning"/>
-                    <button name="action_cancel_subscription" type="object" string="Cancel" class="btn-danger"/>
+                    <button name="action_upgrade_subscription" type="object" string="Upgrade" class="btn btn-success"/>
+                    <button name="action_downgrade_subscription" type="object" string="Downgrade" class="btn btn-warning"/>
+                    <button name="action_cancel_subscription" type="object" string="Cancel" class="btn btn-danger"/>
                 </header>
                 <sheet>
                     <group>

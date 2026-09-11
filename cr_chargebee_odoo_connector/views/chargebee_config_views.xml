@@ -5,6 +5,18 @@
         <field name="model">chargebee.configuration</field>
         <field name="arch" type="xml">
             <form string="Chargebee Configuration">
+                <header>
+                    <div class="btn-group">
+                        <button name="test_connection" type="object" string="Test Connection" class="btn btn-success"
+                                confirm="Are you sure you want to test the connection?" icon="fa-check-circle"/>
+                    </div>
+                    <button name="sync_chargebee_currencies_" type="object" string="Sync Chargebee Currencies"
+                            class="btn btn-warning"
+                            icon="fa-check-circle"/>
+                    <button name="sync_chargebee_companies_" type="object" string="Sync Chargebee Companies"
+                            class="btn btn-warning"
+                            icon="fa-check-circle"/>
+                </header>
                 <sheet>
                     <div class="oe_title">
                         <h1>
@@ -23,18 +35,6 @@
                         <field name="site_name"/>
                         <field name="company_id"/>
                     </group>
-                    <header>
-                        <div class="btn-group-vertical">
-                            <button name="test_connection" type="object" string="Test Connection" class="btn-success"
-                                    confirm="Are you sure you want to test the connection?" icon="fa-check-circle"/>
-                        </div>
-                        <button name="sync_chargebee_currencies_" type="object" string="Sync Chargebee Currencies"
-                                class="btn-warning"
-                                icon="fa-check-circle"/>
-                        <button name="sync_chargebee_companies_" type="object" string="Sync Chargebee Companies"
-                                class="btn-warning"
-                                icon="fa-check-circle"/>
-                    </header>
                     <!--                        <group>-->
                     <!--                            <field name="cr_import_shipping_methods"/>-->
                     <!--                            <field name="cr_export_order" string="Export Order"/>-->
@@ -223,7 +223,7 @@
                                         <button name="action_refresh_webhook_url"
                                                 type="object"
                                                 string="Refresh URL"
-                                                class="btn-secondary"
+                                                class="btn btn-secondary"
                                                 icon="fa-refresh"
                                                 title="Update webhook URL based on current system settings"/>
                                     </div>
@@ -232,7 +232,7 @@
 
                             <group>
                                 <group string="Setup Instructions">
-                                    <div class="alert alert-info" role="alert" style="width: 700px">
+                                    <div class="alert alert-info" role="status" style="width: 700px">
                                         <h4 class="alert-heading">How to Configure Chargebee Webhooks:</h4>
                                         <ol>
                                             <li>
@@ -267,7 +267,7 @@
                                             </li>
                                         </ol>
                                         <p class="mb-0">
-                                            <i class="fa fa-info-circle"/>
+                                            <i class="fa fa-info-circle" title="Note"/>
                                             <strong> Note:</strong> Webhooks provide real-time synchronization of subscription invoices
                                             from Chargebee to Odoo automatically.
                                         </p>
@@ -277,7 +277,7 @@
 
                             <group>
                                 <group string="Supported Webhook Events">
-                                    <div class="alert alert-success" role="alert" style="width: 700px">
+                                    <div class="alert alert-success" role="status" style="width: 700px">
                                         <h5>The following events are automatically processed:</h5>
                                         <table class="table table-sm">
                                             <thead>

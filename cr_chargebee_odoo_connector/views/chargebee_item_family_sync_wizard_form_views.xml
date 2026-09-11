@@ -17,8 +17,8 @@
                     <field name="message" readonly="1"/>
                 </group>
                 <footer>
-                    <button string="Sync" type="object" name="action_sync" class="btn-primary"/>
-                    <button string="Cancel" special="cancel" class="btn-danger"/>
+                    <button string="Sync" type="object" name="action_sync" class="btn btn-primary"/>
+                    <button string="Cancel" special="cancel" class="btn btn-danger"/>
                 </footer>
             </form>
         </field>
