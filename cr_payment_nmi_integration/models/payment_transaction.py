@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Part of Creyox Technologies
+# Part of Creyox Technologies.
 
 import logging
 import urllib.parse
@@ -113,13 +113,13 @@ class PaymentTransaction(models.Model):
                 )
             elif response_code == "2":
                 # Declined
-                _logger.warning(
+                _logger.info(
                     "ACH transaction %s declined: %s", self.reference, response_text
                 )
                 self._set_canceled()
             else:
                 # Error
-                _logger.warning(
+                _logger.info(
                     "ACH transaction %s failed: %s", self.reference, response_text
                 )
                 self._set_error("NMI ACH: " + response_text)
@@ -140,7 +140,7 @@ class PaymentTransaction(models.Model):
             if self.tokenize:
                 self._tokenize_from_notification_data(notification_data)
         else:
-            _logger.warning(
+            _logger.info(
                 "Invalid auth result (%s) for %s.", auth_result, self.reference
             )
             self._set_error("NMI: " + _("Unknown success code: %s", auth_result))
@@ -152,7 +152,7 @@ class PaymentTransaction(models.Model):
         self.ensure_one()
         token_values = self._extract_token_values(notification_data)
         if not token_values.get("provider_ref"):
-            _logger.warning("NMI: Tokenization requested but no vault ID found.")
+            _logger.info("NMI: Tokenization requested but no vault ID found.")
             return
 
         token_values.update(
@@ -225,84 +225,103 @@ class PaymentTransaction(models.Model):
             fee_label = "Debit Card Surcharge"
 
         if fee_percentage > 0:
-            surcharge_amount = self.currency_id.round(
-                (self.amount * fee_percentage) / 100
-            )
-            amount_to_charge = self.amount + surcharge_amount
-
+            has_preexisting_fee = False
             for order in self.sale_order_ids:
-                fee_product = (
-                    self.env["product.product"]
-                    .sudo()
-                    .search([("default_code", "=", fee_product_code)], limit=1)
+                existing_fee_lines = order.order_line.filtered(
+                    lambda l: "Surcharge" in (l.name or "")
+                    or (l.product_id and l.product_id.default_code in ("CREDIT_CARD_FEE", "DEBIT_CARD_FEE"))
                 )
-                existing_fee_line = order.order_line.filtered(
-                    lambda l: "Surcharge" in l.name
+                if existing_fee_lines:
+                    has_preexisting_fee = True
+                    surcharge_amount = sum(existing_fee_lines.mapped("price_subtotal"))
+                    break
+
+            if has_preexisting_fee:
+                amount_to_charge = self.amount
+                _logger.info(
+                    "NMI Token Surcharge: Pre-existing fee line found on order. Amount to charge: %s, Surcharge portion: %s",
+                    amount_to_charge,
+                    surcharge_amount,
                 )
-                if not existing_fee_line:
-                    self.env["sale.order.line"].sudo().create(
-                        {
-                            "order_id": order.id,
-                            "name": f"{fee_label} ({fee_percentage}%)",
-                            "product_id": fee_product.id if fee_product else False,
-                            "product_uom_qty": 1,
-                            "price_unit": surcharge_amount,
-                            "sequence": 999,
-                        }
-                    )
-                else:
-                    existing_fee_line.sudo().write({"price_unit": surcharge_amount})
-
-            for invoice in self.invoice_ids:
-                fee_product = (
-                    self.env["product.product"]
-                    .sudo()
-                    .search([("default_code", "=", fee_product_code)], limit=1)
+            else:
+                surcharge_amount = self.currency_id.round(
+                    (self.amount * fee_percentage) / 100
                 )
-                if fee_product:
-                    invoice_sudo = invoice.sudo()
-                    was_posted = invoice_sudo.state == "posted"
-                    if was_posted:
-                        invoice_sudo.button_draft()
+                amount_to_charge = self.amount + surcharge_amount
 
-                    existing_fee_line = invoice_sudo.invoice_line_ids.filtered(
-                        lambda l: l.product_id.default_code
-                        in ("CREDIT_CARD_FEE", "DEBIT_CARD_FEE")
+                for order in self.sale_order_ids:
+                    fee_product = (
+                        self.env["product.product"]
+                        .sudo()
+                        .search([("default_code", "=", fee_product_code)], limit=1)
                     )
-
-                    account = (
-                        fee_product.property_account_income_id
-                        or fee_product.categ_id.property_account_income_categ_id
+                    existing_fee_line = order.order_line.filtered(
+                        lambda l: "Surcharge" in (l.name or "")
                     )
-                    if account and invoice_sudo.fiscal_position_id:
-                        account = invoice_sudo.fiscal_position_id.map_account(account)
-                    account_id = account.id if account else False
-
-                    line_vals = {
-                        "name": f"{fee_label} ({fee_percentage}%)",
-                        "product_id": fee_product.id,
-                        "quantity": 1,
-                        "price_unit": surcharge_amount,
-                        "tax_ids": [(5, 0, 0)],
-                    }
-                    if account_id:
-                        line_vals["account_id"] = account_id
-
                     if not existing_fee_line:
-                        invoice_sudo.write({"invoice_line_ids": [(0, 0, line_vals)]})
-                    else:
-                        existing_fee_line.write(
+                        self.env["sale.order.line"].sudo().create(
                             {
+                                "order_id": order.id,
                                 "name": f"{fee_label} ({fee_percentage}%)",
+                                "product_id": fee_product.id if fee_product else False,
+                                "product_uom_qty": 1,
                                 "price_unit": surcharge_amount,
-                                "tax_ids": [(5, 0, 0)],
+                                "sequence": 999,
                             }
                         )
+                    else:
+                        existing_fee_line.sudo().write({"price_unit": surcharge_amount})
 
-                    if was_posted and invoice_sudo.state == "draft":
-                        invoice_sudo.action_post()
+                for invoice in self.invoice_ids:
+                    fee_product = (
+                        self.env["product.product"]
+                        .sudo()
+                        .search([("default_code", "=", fee_product_code)], limit=1)
+                    )
+                    if fee_product:
+                        invoice_sudo = invoice.sudo()
+                        was_posted = invoice_sudo.state == "posted"
+                        if was_posted:
+                            invoice_sudo.button_draft()
 
-            self.sudo().write({"amount": amount_to_charge})
+                        existing_fee_line = invoice_sudo.invoice_line_ids.filtered(
+                            lambda l: l.product_id.default_code
+                            in ("CREDIT_CARD_FEE", "DEBIT_CARD_FEE")
+                        )
+
+                        account = (
+                            fee_product.property_account_income_id
+                            or fee_product.categ_id.property_account_income_categ_id
+                        )
+                        if account and invoice_sudo.fiscal_position_id:
+                            account = invoice_sudo.fiscal_position_id.map_account(account)
+                        account_id = account.id if account else False
+
+                        line_vals = {
+                            "name": f"{fee_label} ({fee_percentage}%)",
+                            "product_id": fee_product.id,
+                            "quantity": 1,
+                            "price_unit": surcharge_amount,
+                            "tax_ids": [(5, 0, 0)],
+                        }
+                        if account_id:
+                            line_vals["account_id"] = account_id
+
+                        if not existing_fee_line:
+                            invoice_sudo.write({"invoice_line_ids": [(0, 0, line_vals)]})
+                        else:
+                            existing_fee_line.write(
+                                {
+                                    "name": f"{fee_label} ({fee_percentage}%)",
+                                    "price_unit": surcharge_amount,
+                                    "tax_ids": [(5, 0, 0)],
+                                }
+                            )
+
+                        if was_posted and invoice_sudo.state == "draft":
+                            invoice_sudo.action_post()
+
+                self.sudo().write({"amount": amount_to_charge})
 
         # Build payload
         attempt_orderid = "%s_%d" % (self.reference, int(time.time()))
