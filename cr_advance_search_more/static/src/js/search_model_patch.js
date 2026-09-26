@@ -2,12 +2,54 @@
 
 import { patch } from "@web/core/utils/patch";
 import { SearchModel } from "@web/search/search_model";
+import { userService } from "@web/core/user_service";
+import { Domain } from "@web/core/domain";
+
+patch(userService, {
+    start(env) {
+        const result = super.start(...arguments);
+        const mode = window.sessionStorage.getItem("cr_advance_search_mode") || "default";
+        result.updateContext({ cr_search_mode: mode });
+        return result;
+    },
+});
 
 patch(SearchModel.prototype, {
     setup() {
         super.setup(...arguments);
         this.searchMode = window.sessionStorage.getItem("cr_advance_search_mode") || "default";
         this.columnFilters = {};
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: this.searchMode });
+        }
+        if (this.globalContext) {
+            this.globalContext.cr_search_mode = this.searchMode;
+        }
+    },
+
+    async load(config) {
+        const result = await super.load(...arguments);
+        const mode = this.searchMode || window.sessionStorage.getItem("cr_advance_search_mode") || "default";
+        this.searchMode = mode;
+        if (this.globalContext) {
+            this.globalContext.cr_search_mode = mode;
+        }
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: mode });
+        }
+        return result;
+    },
+
+    async reload(config = {}) {
+        const result = await super.reload(...arguments);
+        const mode = this.searchMode || window.sessionStorage.getItem("cr_advance_search_mode") || "default";
+        if (this.globalContext) {
+            this.globalContext.cr_search_mode = mode;
+        }
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: mode });
+        }
+        return result;
     },
 
     _clearParams() {
@@ -18,8 +60,15 @@ patch(SearchModel.prototype, {
     },
 
     setSearchMode(mode) {
+        console.log("[CR_SEARCH] SearchModel setSearchMode:", mode);
         this.searchMode = mode;
         window.sessionStorage.setItem("cr_advance_search_mode", mode);
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: mode });
+        }
+        if (this.globalContext) {
+            this.globalContext.cr_search_mode = mode;
+        }
         this._notify();
     },
 
@@ -373,7 +422,11 @@ patch(SearchModel.prototype, {
             return [leaf];
         }
         const [field, operator, val] = leaf;
-        if (typeof val !== "string" || !val.trim() || !["ilike", "=ilike", "like", "="].includes(operator)) {
+        if (
+            typeof val !== "string" ||
+            !val.trim() ||
+            !["ilike", "=ilike", "like", "=", "child_of", "parent_of"].includes(operator)
+        ) {
             return [leaf];
         }
 
@@ -382,6 +435,7 @@ patch(SearchModel.prototype, {
             return [leaf];
         }
 
+        let result = [leaf];
         if (mode === "or") {
             const orDomain = [];
             for (let i = 0; i < keywords.length - 1; i++) {
@@ -390,7 +444,7 @@ patch(SearchModel.prototype, {
             for (const keyword of keywords) {
                 orDomain.push([field, operator, keyword]);
             }
-            return orDomain;
+            result = orDomain;
         } else if (mode === "and") {
             const andDomain = [];
             for (let i = 0; i < keywords.length - 1; i++) {
@@ -399,10 +453,18 @@ patch(SearchModel.prototype, {
             for (const keyword of keywords) {
                 andDomain.push([field, operator, keyword]);
             }
-            return andDomain;
+            result = andDomain;
         }
 
-        return [leaf];
+        console.log("[CR_SEARCH] SearchModel _transformDomainLeaf:", {
+            field,
+            operator,
+            val,
+            mode,
+            keywords,
+            result,
+        });
+        return result;
     },
 
     _processDomainForSearchMode(domain, mode) {
@@ -412,7 +474,12 @@ patch(SearchModel.prototype, {
 
         if (mode === "not") {
             const domainForOr = this._processDomainForSearchMode(domain, "or");
-            return ["!", ...domainForOr];
+            const notDomain = ["!", ...domainForOr];
+            console.log("[CR_SEARCH] SearchModel _processDomainForSearchMode NOT mode:", {
+                original: domain,
+                result: notDomain,
+            });
+            return notDomain;
         }
 
         const resultDomain = [];
@@ -427,21 +494,53 @@ patch(SearchModel.prototype, {
         return resultDomain;
     },
 
+    _getSearchItemDomain(activeItem, options = {}) {
+        const domain = super._getSearchItemDomain(...arguments);
+        if (!domain) {
+            return domain;
+        }
+        const { searchItemId } = activeItem;
+        const searchItem = this.searchItems[searchItemId];
+        // Only apply Search Mode (OR, AND, NOT) to user-typed search bar fields, preserving view filters and action domains!
+        if (searchItem && ["field", "field_property"].includes(searchItem.type)) {
+            const mode = this.searchMode || "default";
+            if (mode !== "default") {
+                let domainArray = [];
+                try {
+                    domainArray = Array.isArray(domain) ? domain : domain.toList(this.domainEvalContext);
+                } catch (e) {
+                    domainArray = Array.isArray(domain) ? domain : [];
+                }
+                const processed = this._processDomainForSearchMode(domainArray, mode);
+                console.log("[CR_SEARCH] SearchModel _getSearchItemDomain:", {
+                    searchItem: searchItem.description || searchItem.name,
+                    mode,
+                    original: domainArray,
+                    processed,
+                });
+                return new Domain(processed);
+            }
+        }
+        return domain;
+    },
+
     get domain() {
         const baseDomain = super.domain;
-        const activeMode = this.searchMode || "default";
-        const modeProcessed = this._processDomainForSearchMode(baseDomain, activeMode);
         const colDomain = this.getColumnFiltersDomain();
-        if (colDomain.length > 0) {
-            return [...modeProcessed, ...colDomain];
-        }
-        return modeProcessed;
+        const finalDomain = colDomain.length > 0 ? [...baseDomain, ...colDomain] : baseDomain;
+        console.log("[CR_SEARCH] SearchModel get domain():", {
+            activeMode: this.searchMode || "default",
+            baseDomain: JSON.parse(JSON.stringify(baseDomain || [])),
+            finalDomain: JSON.parse(JSON.stringify(finalDomain || [])),
+        });
+        return finalDomain;
     },
 
     get context() {
         const ctx = super.context;
-        return Object.assign({}, ctx, {
+        const resultCtx = Object.assign({}, ctx, {
             cr_search_mode: this.searchMode || "default",
         });
+        return resultCtx;
     },
 });

@@ -3,10 +3,20 @@
 import { patch } from "@web/core/utils/patch";
 import { SearchBar } from "@web/search/search_bar/search_bar";
 import { useState, onWillDestroy } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
 
 patch(SearchBar.prototype, {
     setup() {
         super.setup(...arguments);
+        this.userService = useService("user");
+        const activeMode = window.sessionStorage.getItem("cr_advance_search_mode") || "default";
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: activeMode });
+        }
+        if (this.env.searchModel?.globalContext) {
+            this.env.searchModel.globalContext.cr_search_mode = activeMode;
+        }
+
         Object.assign(this.state, {
             showHistoryDropdown: false,
             showSavedFiltersDropdown: false,
@@ -75,10 +85,40 @@ patch(SearchBar.prototype, {
 
     onSearchModeChange(ev) {
         const selectedMode = ev.target.value;
+        console.log("[CR_SEARCH] SearchBar onSearchModeChange:", selectedMode);
         window.sessionStorage.setItem("cr_advance_search_mode", selectedMode);
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: selectedMode });
+        }
         if (this.env.searchModel) {
+            if (this.env.searchModel.globalContext) {
+                this.env.searchModel.globalContext.cr_search_mode = selectedMode;
+            }
             this.env.searchModel.setSearchMode(selectedMode);
         }
+    },
+
+    async computeSubItems(searchItem, query) {
+        const mode = this.currentSearchMode || "default";
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: mode });
+        }
+        if (this.env.searchModel?.globalContext) {
+            this.env.searchModel.globalContext.cr_search_mode = mode;
+        }
+        console.log("[CR_SEARCH] SearchBar computeSubItems called:", {
+            field: searchItem.fieldName,
+            query,
+            mode,
+            globalContextMode: this.env.searchModel?.globalContext?.cr_search_mode,
+        });
+        const subItems = await super.computeSubItems(...arguments);
+        console.log("[CR_SEARCH] SearchBar computeSubItems returned:", {
+            field: searchItem.fieldName,
+            count: subItems?.length,
+            subItems,
+        });
+        return subItems;
     },
 
     toggleHistoryDropdown(ev) {
@@ -122,6 +162,10 @@ patch(SearchBar.prototype, {
     },
 
     selectItem(item) {
+        console.log("[CR_SEARCH] SearchBar selectItem:", {
+            item,
+            currentSearchMode: this.currentSearchMode,
+        });
         if (item && !item.unselectable) {
             let queryVal = "";
             if (typeof item.value === "string" && item.value.trim()) {
@@ -140,7 +184,13 @@ patch(SearchBar.prototype, {
 
     async onSelectHistoryItem(item) {
         this.state.showHistoryDropdown = false;
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: item.mode });
+        }
         if (this.env.searchModel) {
+            if (this.env.searchModel.globalContext) {
+                this.env.searchModel.globalContext.cr_search_mode = item.mode;
+            }
             this.env.searchModel.setSearchMode(item.mode);
             const searchInput = this.inputRef?.el || document.querySelector(".o_searchview_input");
             if (searchInput) {
@@ -160,8 +210,15 @@ patch(SearchBar.prototype, {
 
     async onSelectSavedFilter(item) {
         this.state.showSavedFiltersDropdown = false;
+        const targetMode = item.mode || "default";
+        if (this.userService) {
+            this.userService.updateContext({ cr_search_mode: targetMode });
+        }
         if (this.env.searchModel) {
-            this.env.searchModel.setSearchMode(item.mode || "default");
+            if (this.env.searchModel.globalContext) {
+                this.env.searchModel.globalContext.cr_search_mode = targetMode;
+            }
+            this.env.searchModel.setSearchMode(targetMode);
             if (item.domain) {
                 try {
                     const parsedDomain = typeof item.domain === "string" ? JSON.parse(item.domain) : item.domain;
