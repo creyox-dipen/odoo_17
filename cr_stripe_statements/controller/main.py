@@ -57,7 +57,8 @@ class StripeStatementCollection(StripeController):
         return response
 
     def _handle_charge_succeeded(self, journal, stripe_object, provider):
-        env = request.env
+        company = journal.company_id
+        env = request.env["payment.provider"].sudo().with_company(company).env
         logger.info(
             "Handling charge.succeeded for charge ID: %s", stripe_object.get("id")
         )
@@ -127,6 +128,7 @@ class StripeStatementCollection(StripeController):
                         "name": f"Stripe Statement {charge_date}",
                         "date": charge_date,
                         "journal_id": journal.id,
+                        "company_id": company.id,
                     }
                 )
             )
@@ -176,7 +178,7 @@ class StripeStatementCollection(StripeController):
                     invoice.partner_id if invoice else transaction.partner_id
                 )
                 account_receivable = (
-                    invoice_partner.property_account_receivable_id
+                    invoice_partner.with_company(company).property_account_receivable_id
                     if invoice_partner
                     else False
                 )
@@ -213,6 +215,7 @@ class StripeStatementCollection(StripeController):
                 "ref": stripe_object.get("id"),
                 "payment_ref": stripe_object.get("description") or payment_intent_id,
                 "journal_id": journal.id,
+                "company_id": company.id,
                 "counterpart_account_id": (
                     account_receivable.id if account_receivable else False
                 ),
@@ -276,6 +279,7 @@ class StripeStatementCollection(StripeController):
                         "ref": getattr(bt, "id", None),
                         "payment_ref": f"Stripe Fee for {stripe_object.get('id')}",
                         "journal_id": journal.id,
+                        "company_id": company.id,
                         "counterpart_account_id": stripe_fee_account.id,
                     }
                     fee_line = (
@@ -291,7 +295,8 @@ class StripeStatementCollection(StripeController):
             logger.info("Error while handling charge: %s", str(e))
 
     def _handle_refund(self, journal, stripe_object, provider):
-        env = request.env
+        company = journal.company_id
+        env = request.env["payment.provider"].sudo().with_company(company).env
         logger.info("Handling refund for refund %s", stripe_object.get("id"))
 
         # Find matching payment.transaction using payment_intent or charge
@@ -373,6 +378,7 @@ class StripeStatementCollection(StripeController):
                         "name": f"Stripe Statement {refund_date}",
                         "date": refund_date,
                         "journal_id": journal.id,
+                        "company_id": company.id,
                     }
                 )
             )
@@ -429,12 +435,12 @@ class StripeStatementCollection(StripeController):
                 foreign_currency_id = refund_currency.id
 
             outstanding_payment_account = (
-                request.env["account.account"]
+                env["account.account"]
                 .sudo()
                 .search(
                     [
                         ("code", "=", "101404"),
-                        ("company_id", "=", journal.company_id.id),
+                        ("company_id", "=", company.id),
                     ],
                     limit=1,
                 )
@@ -453,6 +459,7 @@ class StripeStatementCollection(StripeController):
                 "ref": stripe_object.get("id"),
                 "payment_ref": f"Refund for {charge_id or payment_intent_id}",
                 "journal_id": journal.id,
+                "company_id": company.id,
                 "counterpart_account_id": outstanding_payment_account.id,
             }
 
@@ -881,6 +888,7 @@ class StripeStatementCollection(StripeController):
                     "ref": f"{stripe_object.get('id')}-fee",
                     "payment_ref": f"Stripe Fee Reversal (Refund)",
                     "journal_id": journal.id,
+                    "company_id": company.id,
                     "counterpart_account_id": stripe_fee_account.id,
                 }
 
@@ -896,7 +904,8 @@ class StripeStatementCollection(StripeController):
             logger.error(traceback.format_exc())
 
     def _handle_payout(self, journal, stripe_object, provider):
-        env = request.env
+        company = journal.company_id
+        env = request.env["payment.provider"].sudo().with_company(company).env
         logger.info("Handling payout for payout ID: %s", stripe_object.get("id"))
 
         # Set Stripe API key for additional fetches
@@ -963,6 +972,7 @@ class StripeStatementCollection(StripeController):
             # Create journal entry for internal transfer (in source journal)
             transfer_move_vals = {
                 "journal_id": journal.id,  # Source journal (Stripe)
+                "company_id": company.id,
                 "date": payout_date,
                 "ref": f"Internal Transfer for {stripe_object.get('id')}",
                 "move_type": "entry",
@@ -973,6 +983,7 @@ class StripeStatementCollection(StripeController):
                         {
                             "name": f"Internal Transfer for {stripe_object.get('id')}",
                             "account_id": source_account.id,  # Stripe liquidity
+                            "company_id": company.id,
                             "debit": 0.0,
                             "credit": net_balance_amount,  # Money leaves source
                             "currency_id": net_currency_id,
@@ -986,6 +997,7 @@ class StripeStatementCollection(StripeController):
                         {
                             "name": f"Internal Transfer for {stripe_object.get('id')}",
                             "account_id": destination_account.id,  # Bank liquidity
+                            "company_id": company.id,
                             "debit": net_balance_amount,  # Money arrives in destination
                             "credit": 0.0,
                             "currency_id": net_currency_id,
@@ -996,7 +1008,7 @@ class StripeStatementCollection(StripeController):
                 ],
             }
             transfer_move = (
-                request.env["account.move"].sudo().create(transfer_move_vals)
+                env["account.move"].sudo().create(transfer_move_vals)
             )
             transfer_move.action_post()
 

@@ -6,12 +6,12 @@
     "website": "https://www.creyox.com",
     "support": "https://www.creyox.com/helpdesk",
     "live_test_url": "https://www.creyox.com/helpdesk?module_tech_name=cr_stripe_statements&version=17.0",
-    "category": "Accounting",
+    "category": "Website",
     "summary": """
     Automatically sync Stripe transactions, fees, refunds, and payouts into Odoo bank statements in real time using webhooks. Accurate, fast, and error-free.
     """,
     "license": "OPL-1",
-    "version": "17.0.0.0",
+    "version": "17.0.0.1",
     "description": """
     <h1>Advanced Stripe Bank Statement Connector for Odoo</h1>
 
