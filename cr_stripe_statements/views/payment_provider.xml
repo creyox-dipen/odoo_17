@@ -8,10 +8,9 @@
             <xpath expr="//group[@name='payment_followup']" position="after">
                 <group string="Stripe Statements Collections">
                     <field name="is_stripe_collection" invisible="code != 'stripe'"/>
+                    <field name="stripe_allow_auto_reconcile" invisible="code != 'stripe'"/>
                     <field name="stripe_fees_partner" invisible="code != 'stripe'"/>
                     <field name="transfer_account" invisible="code != 'stripe'"/>
-                    <field name="stripe_fees_expense_account_id" invisible="code != 'stripe'"/>
-
                 </group>
             </xpath>
         </field>

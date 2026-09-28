@@ -1,11 +1,14 @@
-17.0.0.1(Date: 26th September,2026)
------------------------------------
-- Fixed multi-company webhook processing: ensure statement, lines, fee reversals, and payout internal transfers execute within the Stripe journal's company context.
-
-17.0.0.0(Date: 4th August,2026)
+17.0.0.0(Date: 15th October,2025)
 -------------------------------
-- Migrated from version 18
-- Migrated and added all features of enterprise version.
-- fees account selectable in payment provider.
-- used partner's receivable account instead of hardcoded account in statement line.
-- auto reconcile credit note for refund statement.
+
+ [ADDED] Developed in version 17.0.0.0
+
+ 17.0.0.1(Date: 28th July,2026)
+-------------------------------
+
+ [FIXED] Set partner's receivable account as counter account in statement
+
+ 17.0.0.2(Date: 28th September,2026)
+-------------------------------
+
+ [FIXED] Multi-company webhook processing: execute statement, line, fee, and payout creations in the journal company context

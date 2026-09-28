@@ -33,8 +33,17 @@ class AccountBankStatement(models.Model):
                 ("is_reconciled", "=", False),
                 ("create_date", ">", start_time.date() - relativedelta(months=3)),
                 ("company_id", "in", configured_company.ids),
-                ("journal_id.code", "!=", "STRP"),  # Skip Stripe journal
             ]
+            stripe_provider = self.env["payment.provider"].sudo().search([("code", "=", "stripe"), ("company_id", "in", configured_company.ids)], limit=1)
+            if not stripe_provider or not stripe_provider.stripe_allow_auto_reconcile:
+                domain.append(("journal_id.code", "!=", "STRP"))  # Skip Stripe journal unless allowed
+            
+            # Safety Check: Always exclude Stripe Refunds and Stripe Fees from auto-reconciliation
+            # so they don't get infinitely picked up by the cron job.
+            domain.extend([
+                "|", ("payment_ref", "=", False), "!", "|", ("payment_ref", "ilike", "Refund for"), ("payment_ref", "ilike", "Stripe Fee for")
+            ])
+            
             st_lines = self.search(
                 domain, limit=limit, order="cron_last_check ASC NULLS FIRST, id"
             )
